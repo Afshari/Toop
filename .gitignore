@@ -1,0 +1,67 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.sdf
+*.opensdf
+*.VC.db
+*.VC.opendb
+/packages/
+
+# Data
+input/*
+output/*
+
+# Python
+Toop_Bench/.venv/
+Toop_Bench/__pycache__/
+Toop_Bench/**/__pycache__/
+Toop_Bench/**/*.pyc
+Toop_Bench/**/*.pyo
+
+# Benchmark
+Toop_Bench/.coverage
+Toop_Bench/*.csv
+# Benchmark staging folders
+staging/
+signed_staging/
+
+
+# Build output
+x64/
+x86/
+Debug/
+Release/
+out/
+reference/
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+build/
+
+# CUDA
+*.cubin
+*.fatbin
+*.ptx
+
+# Object files
+*.obj
+*.pdb
+*.ilk
+*.exp
+*.lib
+*.dll
+*.exe
+
+# Nsight
+*.nsight
+*.nvvp
+*.qdrep
+*.sqlite
+
+# Google Test
+googletest/
+googlemock/
+_deps/
