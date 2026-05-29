@@ -225,6 +225,8 @@ export class HairSimulation {
     // TODO: implement after shaders are written
     // -------------------------------------------------------
     update(dt, sphereCenter, sphereQuaternion) {
+        if (dt <= 0) return
+
         const subDt = dt / PARAMS.num_substeps
         const center = sphereCenter || new THREE.Vector3(...PARAMS.sphere_center)
         const quat = sphereQuaternion || new THREE.Quaternion()

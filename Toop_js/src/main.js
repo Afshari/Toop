@@ -3,6 +3,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { PARAMS } from './config.js'
 import { StrandGeometry } from './StrandGeometry.js'
 import { HairSimulation } from './HairSimulation.js'
+import { Sphere } from './Sphere.js'
+const clock = new THREE.Clock()
 
 // ------------------------------------------------------------
 // Renderer
@@ -50,18 +52,9 @@ dirLight.castShadow = true
 scene.add(dirLight)
 
 // ------------------------------------------------------------
-// Sphere - placeholder, replaced by Sphere class in js/sphere-physics
+// Sphere
 // ------------------------------------------------------------
-const sphereGeo = new THREE.SphereGeometry(PARAMS.sphere_radius, 32, 32)
-const sphereMat = new THREE.MeshStandardMaterial({ color: 0x555555 })
-const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat)
-sphereMesh.castShadow = true
-sphereMesh.position.set(
-    PARAMS.sphere_center[0],
-    PARAMS.sphere_center[1],
-    PARAMS.sphere_center[2]
-)
-scene.add(sphereMesh)
+const sphere = new Sphere(scene)
 
 // ------------------------------------------------------------
 // Ground
@@ -99,7 +92,12 @@ function animate() {
     requestAnimationFrame(animate)
     controls.update()
 
-    simulation.update(1 / 60, null, null)
+    const dt = Math.min(Math.max(clock.getDelta(), 1 / 120), 0.05)
+
+    sphere.update(dt)
+    sphere.updateOrientation(dt)
+
+    simulation.update(dt, sphere.getCenter(), sphere.getOrientation())
 
     if (strandGeometry.mesh.material.uniforms) {
         strandGeometry.mesh.material.uniforms.uPositionTex.value =
