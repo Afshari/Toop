@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { PARAMS } from './config.js'
 import { StrandGeometry } from './StrandGeometry.js'
+import { HairSimulation } from './HairSimulation.js'
 
 // ------------------------------------------------------------
 // Renderer
@@ -67,7 +68,7 @@ scene.add(sphereMesh)
 // ------------------------------------------------------------
 const groundGeo = new THREE.PlaneGeometry(20, 20)
 const groundMat = new THREE.MeshStandardMaterial({ color: 0x333333 })
-const ground    = new THREE.Mesh(groundGeo, groundMat)
+const ground = new THREE.Mesh(groundGeo, groundMat)
 ground.rotation.x = -Math.PI / 2
 ground.position.y = PARAMS.ground_y
 ground.receiveShadow = true
@@ -78,6 +79,8 @@ scene.add(ground)
 // ------------------------------------------------------------
 const strandGeometry = new StrandGeometry()
 scene.add(strandGeometry.mesh)
+const simulation = new HairSimulation(renderer, strandGeometry)
+strandGeometry.connectSimulation(simulation.getPositionTexture())
 
 // ------------------------------------------------------------
 // Resize handler
@@ -95,6 +98,14 @@ window.addEventListener('resize', () => {
 function animate() {
     requestAnimationFrame(animate)
     controls.update()
+
+    simulation.update(1 / 60, null, null)
+
+    if (strandGeometry.mesh.material.uniforms) {
+        strandGeometry.mesh.material.uniforms.uPositionTex.value =
+            simulation.getPositionTexture()
+    }
+
     renderer.render(scene, camera)
 }
 

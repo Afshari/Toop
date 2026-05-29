@@ -50,6 +50,9 @@ export class StrandGeometry {
         this._build()
     }
 
+    getRoots() { return this.roots }
+    getTexSize() { return this.texSize }
+
     _build() {
         const {
             target_strand_count,
@@ -137,6 +140,23 @@ export class StrandGeometry {
         const mat = new THREE.LineBasicMaterial({ color: 0xddccaa })
 
         this.mesh = new THREE.LineSegments(geo, mat)
+    }
+
+    connectSimulation(positionTex) {
+        import('./shaders/strand_vert.glsl?raw').then(vertMod =>
+            import('./shaders/strand_frag.glsl?raw').then(fragMod => {
+                const mat = new THREE.ShaderMaterial({
+                    vertexShader: vertMod.default,
+                    fragmentShader: fragMod.default,
+                    uniforms: {
+                        uPositionTex: { value: positionTex },
+                        uColor: { value: new THREE.Color(0xddccaa) },
+                    }
+                })
+                this.mesh.material.dispose()
+                this.mesh.material = mat
+                this.mesh.frustumCulled = false   // bounding box is wrong since positions are in texture
+            }))
     }
 
     dispose() {
