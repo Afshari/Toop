@@ -22,10 +22,10 @@ Toop_Bench/**/*.pyo
 # Benchmark
 Toop_Bench/.coverage
 Toop_Bench/*.csv
+
 # Benchmark staging folders
 staging/
 signed_staging/
-
 
 # Build output
 x64/
@@ -65,3 +65,12 @@ build/
 googletest/
 googlemock/
 _deps/
+
+# JavaScript
+Toop_js/node_modules/
+Toop_js/dist/
+Toop_js/.vite/
+
+# OS
+.DS_Store
+Thumbs.db
