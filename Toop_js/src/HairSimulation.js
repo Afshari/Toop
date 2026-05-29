@@ -222,7 +222,6 @@ export class HairSimulation {
     // -------------------------------------------------------
     // Simulation update - substep loop
     // Called each frame from main.js
-    // TODO: implement after shaders are written
     // -------------------------------------------------------
     update(dt, sphereCenter, sphereQuaternion) {
         if (dt <= 0) return

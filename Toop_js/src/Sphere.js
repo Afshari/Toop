@@ -4,15 +4,32 @@ import { PARAMS } from './config.js'
 export class Sphere {
 
     constructor(scene) {
-        this.center   = new THREE.Vector3(...PARAMS.sphere_center)
+        this.center = new THREE.Vector3(...PARAMS.sphere_center)
         this.velocity = new THREE.Vector3(0, 0, 0)
-        this.radius   = PARAMS.sphere_radius
+        this.radius = PARAMS.sphere_radius
 
         this.rollingOrientation = new THREE.Quaternion()  // identity
-        this.sphereOrientation  = new THREE.Quaternion()  // identity
+        this.sphereOrientation = new THREE.Quaternion()  // identity
 
         this.roomMin = new THREE.Vector3(...PARAMS.room_min)
         this.roomMax = new THREE.Vector3(...PARAMS.room_max)
+
+        this.idleTimer = 0.0
+
+        // pre-allocated objects for character methods
+        this._raycaster = new THREE.Raycaster()
+        this._plane = new THREE.Plane()
+        this._hitPoint = new THREE.Vector3()
+        this._cameraRight = new THREE.Vector3()
+        this._cameraUp = new THREE.Vector3()
+        this._offset = new THREE.Vector3()
+        this._forward = new THREE.Vector3()
+        this._targetQuat = new THREE.Quaternion()
+        this._tiltX = new THREE.Quaternion()
+        this._tiltY = new THREE.Quaternion()
+
+        this._axisY = new THREE.Vector3(0, 1, 0)
+        this._axisX = new THREE.Vector3(1, 0, 0)
 
         // mesh
         const geo = new THREE.SphereGeometry(this.radius, 32, 32)
@@ -69,13 +86,13 @@ export class Sphere {
         const vy = this.velocity.y
         const vz = this.velocity.z
 
-        const ax    = vz / this.radius
-        const ay    = -vx / this.radius
-        const az    = -vy / this.radius
+        const ax = vz / this.radius
+        const ay = -vx / this.radius
+        const az = -vy / this.radius
         const angle = Math.sqrt(ax * ax + ay * ay + az * az) * dt
 
         if (angle > 1e-6) {
-            const axis  = new THREE.Vector3(ax, ay, az).normalize()
+            const axis = new THREE.Vector3(ax, ay, az).normalize()
             const delta = new THREE.Quaternion().setFromAxisAngle(axis, angle)
             this.rollingOrientation.premultiply(delta).normalize()
         }
@@ -83,7 +100,81 @@ export class Sphere {
         this.sphereOrientation.copy(this.rollingOrientation)
     }
 
-    getCenter()      { return this.center }
+    isIdle() {
+        return this.velocity.length() < PARAMS.idle_speed_threshold
+    }
+
+    isTrulyIdle() {
+        return this.idleTimer >= PARAMS.idle_threshold
+    }
+
+    updateIdleTimer(dt) {
+        if (this.isIdle()) {
+            this.idleTimer += dt
+        } else {
+            this.idleTimer = 0.0
+        }
+    }
+
+    rotateTowardCamera(cameraPos) {
+        if (!this.isTrulyIdle()) return
+
+        const toCamera = this._forward.set(
+            cameraPos.x - this.center.x,
+            0.0,
+            cameraPos.z - this.center.z
+        ).normalize()
+
+        const angleToCamera = Math.atan2(toCamera.x, toCamera.z)
+        this._targetQuat.setFromAxisAngle(this._axisY, angleToCamera)
+
+        this.rollingOrientation.slerp(this._targetQuat, Math.min(PARAMS.idle_rotate_speed, 1.0))
+        this.rollingOrientation.normalize()
+    }
+
+    updateHeadTilt(camera, mouseNDC) {
+        if (!this.isTrulyIdle()) {
+            this.sphereOrientation.copy(this.rollingOrientation)
+            return
+        }
+
+        // ray from camera through mouse position
+        this._raycaster.setFromCamera(mouseNDC, camera)
+
+        // plane through sphere center perpendicular to camera view direction
+        camera.getWorldDirection(this._forward)
+        this._plane.setFromNormalAndCoplanarPoint(this._forward, this.center)
+
+        const hit = this._raycaster.ray.intersectPlane(this._plane, this._hitPoint)
+        if (!hit) {
+            this.sphereOrientation.copy(this.rollingOrientation)
+            return
+        }
+
+        // offset from sphere center in camera right / up space
+        this._cameraRight.setFromMatrixColumn(camera.matrixWorld, 0).normalize()
+        this._cameraUp.setFromMatrixColumn(camera.matrixWorld, 1).normalize()
+
+        this._offset.copy(hit).sub(this.center)
+        const dx = this._offset.dot(this._cameraRight)
+        const dy = this._offset.dot(this._cameraUp)
+
+        const { max_tilt, tilt_strength } = PARAMS
+        const tiltX = Math.max(-max_tilt, Math.min(max_tilt, -dy * tilt_strength))
+        const tiltY = Math.max(-max_tilt, Math.min(max_tilt, dx * tilt_strength))
+
+        this._tiltY.setFromAxisAngle(this._axisY, tiltY)
+        this._tiltX.setFromAxisAngle(this._axisX, tiltX)
+
+        // sphereOrientation = rolling * tilt (hair roots follow tilt too)
+        this.sphereOrientation
+            .copy(this.rollingOrientation)
+            .multiply(this._tiltY)
+            .multiply(this._tiltX)
+            .normalize()
+    }
+
+    getCenter() { return this.center }
     getOrientation() { return this.sphereOrientation }
 
     dispose() {

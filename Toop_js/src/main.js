@@ -40,6 +40,12 @@ controls.enableDamping = true
 controls.dampingFactor = 0.05
 controls.target.set(0, 1.5, 0)
 
+const mouseNDC = new THREE.Vector2(0, 0)
+window.addEventListener('mousemove', (e) => {
+    mouseNDC.x = (e.clientX / window.innerWidth) * 2 - 1
+    mouseNDC.y = -(e.clientY / window.innerHeight) * 2 + 1
+})
+
 // ------------------------------------------------------------
 // Lighting
 // ------------------------------------------------------------
@@ -96,6 +102,9 @@ function animate() {
 
     sphere.update(dt)
     sphere.updateOrientation(dt)
+    sphere.updateIdleTimer(dt)
+    sphere.rotateTowardCamera(camera.position)
+    sphere.updateHeadTilt(camera, mouseNDC)
 
     simulation.update(dt, sphere.getCenter(), sphere.getOrientation())
 
