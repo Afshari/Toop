@@ -150,8 +150,12 @@ export class StrandGeometry {
                     fragmentShader: fragMod.default,
                     uniforms: {
                         uPositionTex: { value: positionTex },
-                        uColor: { value: new THREE.Color(0xddccaa) },
-                    }
+                        uColor: { value: new THREE.Color(1.0, 0.5, 0.5) },
+                        uLightDir: { value: new THREE.Vector3(5, 8, 5).normalize() },
+                        uTexSize: { value: this.texSize },
+                    },
+                    transparent: true,
+                    depthWrite:  true,
                 })
                 this.mesh.material.dispose()
                 this.mesh.material = mat

@@ -39,7 +39,7 @@ export class Sphere {
 
         // mesh
         const geo = new THREE.SphereGeometry(this.radius, 32, 32)
-        const mat = new THREE.MeshStandardMaterial({ color: 0x555555 })
+        const mat = new THREE.MeshStandardMaterial({ color: new THREE.Color(0.9, 0.15, 0.15) })
         this.mesh = new THREE.Mesh(geo, mat)
         this.mesh.castShadow = true
         scene.add(this.mesh)

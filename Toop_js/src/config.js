@@ -39,4 +39,7 @@ export const PARAMS = {
     idle_speed_threshold: 0.05,
     idle_threshold: 0.5,
     idle_rotate_speed: 0.04,
+
+    wind_strength:  0.01,
+    wind_frequency: 0.5,
 }

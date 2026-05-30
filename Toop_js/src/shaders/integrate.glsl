@@ -6,6 +6,8 @@ uniform vec4  uSphereQuat;
 uniform float uGravity;
 uniform float uDt;
 uniform float uDamping;
+uniform vec3 uWind;
+uniform float uTime;
 
 // rotate vector v by quaternion q (xyzw)
 vec3 quatRotate(vec4 q, vec3 v) {
@@ -30,7 +32,10 @@ void main() {
 
     // non-root - integrate
     vec3 v       = vel.xyz;
-    v            = (v + vec3(0.0, uGravity, 0.0) * uDt) * uDamping;
+    float phase = gl_FragCoord.x * 0.11 + gl_FragCoord.y * 0.17;
+    float noise = sin(phase + uTime * 2.1) * cos(phase * 0.53 + uTime * 1.3);
+    vec3  wind  = uWind * (1.0 + 12.0 * noise);
+    v = (v + (vec3(0.0, uGravity, 0.0) + wind) * uDt) * uDamping;
     vec3 newPos  = pos.xyz + v * uDt;
 
     gl_FragColor = vec4(newPos, invMass);

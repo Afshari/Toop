@@ -132,11 +132,11 @@ function animate() {
     if(!sphere.isDragging) {
         sphere.updateOrientation(dt)
         sphere.rotateTowardCamera(camera.position)
-        sphere.updateHeadTilt(camera, mouseNDC)
+        // sphere.updateHeadTilt(camera, mouseNDC)
     }
 
     simulation.update(dt, sphere.getCenter(), sphere.getOrientation(),
-        sphere.isDragging, sphere.getFrameDelta())
+        sphere.isDragging, sphere.getFrameDelta(), clock.getElapsedTime())
 
     if (strandGeometry.mesh.material.uniforms) {
         strandGeometry.mesh.material.uniforms.uPositionTex.value =

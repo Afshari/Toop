@@ -136,6 +136,8 @@ export class HairSimulation {
             uGravity: { value: PARAMS.gravity },
             uDt: { value: 0.0 },
             uDamping: { value: PARAMS.damping },
+            uWind: { value: new THREE.Vector3() },
+            uTime: { value: 0.0 },
         })
         this._checkError(this.gpuIntegrate.init(), 'gpuIntegrate')
 
@@ -216,8 +218,14 @@ export class HairSimulation {
     // Simulation update - substep loop
     // Called each frame from main.js
     // -------------------------------------------------------
-    update(dt, sphereCenter, sphereQuaternion, isDragging, frameDelta) {
+    update(dt, sphereCenter, sphereQuaternion, isDragging, frameDelta, elapsedTime) {
         if (dt <= 0) return
+
+        const t = elapsedTime || 0
+        const wx = Math.sin(t * PARAMS.wind_frequency * Math.PI * 2) * PARAMS.wind_strength
+        const wz = Math.cos(t * PARAMS.wind_frequency * 0.7 * Math.PI * 2) * PARAMS.wind_strength * 0.5
+        this.posVar.material.uniforms.uWind.value.set(wx, 0, wz)
+        this.posVar.material.uniforms.uTime.value = t
 
         const subDt = dt / PARAMS.num_substeps
         const center = sphereCenter || new THREE.Vector3(...PARAMS.sphere_center)
