@@ -31,6 +31,12 @@ export class Sphere {
         this._axisY = new THREE.Vector3(0, 1, 0)
         this._axisX = new THREE.Vector3(1, 0, 0)
 
+        this.isDragging = false
+        this.dragVelocity = new THREE.Vector3()
+        this._frameDelta = new THREE.Vector3()
+        this._prevCenter = new THREE.Vector3(...PARAMS.sphere_center)
+        this._dragHit = new THREE.Vector3()
+
         // mesh
         const geo = new THREE.SphereGeometry(this.radius, 32, 32)
         const mat = new THREE.MeshStandardMaterial({ color: 0x555555 })
@@ -40,46 +46,70 @@ export class Sphere {
     }
 
     update(dt) {
-        // damping
-        this.velocity.multiplyScalar(PARAMS.sphere_damping)
+        this._frameDelta.set(0, 0, 0)
 
-        // gravity
-        this.velocity.y += PARAMS.sphere_gravity * dt
+        if (!this.isDragging) {
+            this.velocity.multiplyScalar(PARAMS.sphere_damping)
+            this.velocity.y += PARAMS.sphere_gravity * dt
+            this.center.addScaledVector(this.velocity, dt)
 
-        // integrate position
-        this.center.addScaledVector(this.velocity, dt)
-
-        // ground
-        if (this.center.y - this.radius < this.roomMin.y) {
-            this.center.y = this.roomMin.y + this.radius
-            this.velocity.y = -this.velocity.y * PARAMS.restitution
-        }
-        // ceiling
-        if (this.center.y + this.radius > this.roomMax.y) {
-            this.center.y = this.roomMax.y - this.radius
-            this.velocity.y = -this.velocity.y * PARAMS.restitution
-        }
-        // left / right
-        if (this.center.x - this.radius < this.roomMin.x) {
-            this.center.x = this.roomMin.x + this.radius
-            this.velocity.x = -this.velocity.x * PARAMS.restitution
-        }
-        if (this.center.x + this.radius > this.roomMax.x) {
-            this.center.x = this.roomMax.x - this.radius
-            this.velocity.x = -this.velocity.x * PARAMS.restitution
-        }
-        // front / back
-        if (this.center.z - this.radius < this.roomMin.z) {
-            this.center.z = this.roomMin.z + this.radius
-            this.velocity.z = -this.velocity.z * PARAMS.restitution
-        }
-        if (this.center.z + this.radius > this.roomMax.z) {
-            this.center.z = this.roomMax.z - this.radius
-            this.velocity.z = -this.velocity.z * PARAMS.restitution
+            // all wall/floor collisions stay here unchanged
+            if (this.center.y - this.radius < this.roomMin.y) {
+                this.center.y = this.roomMin.y + this.radius
+                this.velocity.y = -this.velocity.y * PARAMS.restitution
+            }
+            if (this.center.y + this.radius > this.roomMax.y) {
+                this.center.y = this.roomMax.y - this.radius
+                this.velocity.y = -this.velocity.y * PARAMS.restitution
+            }
+            if (this.center.x - this.radius < this.roomMin.x) {
+                this.center.x = this.roomMin.x + this.radius
+                this.velocity.x = -this.velocity.x * PARAMS.restitution
+            }
+            if (this.center.x + this.radius > this.roomMax.x) {
+                this.center.x = this.roomMax.x - this.radius
+                this.velocity.x = -this.velocity.x * PARAMS.restitution
+            }
+            if (this.center.z - this.radius < this.roomMin.z) {
+                this.center.z = this.roomMin.z + this.radius
+                this.velocity.z = -this.velocity.z * PARAMS.restitution
+            }
+            if (this.center.z + this.radius > this.roomMax.z) {
+                this.center.z = this.roomMax.z - this.radius
+                this.velocity.z = -this.velocity.z * PARAMS.restitution
+            }
         }
 
+        this._frameDelta.copy(this.center).sub(this._prevCenter)
+        this._prevCenter.copy(this.center)
         this.mesh.position.copy(this.center)
     }
+
+    handleDragStart(raycaster) {
+        const hits = raycaster.intersectObject(this.mesh)
+        if (hits.length === 0) return false
+        this.isDragging = true
+        this.velocity.set(0, 0, 0)
+        this.dragVelocity.set(0, 0, 0)
+        return true
+    }
+
+    handleDragMove(raycaster, camera, dt) {
+        camera.getWorldDirection(this._forward)
+        this._plane.setFromNormalAndCoplanarPoint(this._forward, this.center)
+        const hit = raycaster.ray.intersectPlane(this._plane, this._dragHit)
+        if (!hit) return
+
+        this.dragVelocity.copy(hit).sub(this.center).divideScalar(dt)
+        this.center.lerp(hit, PARAMS.drag_smoothing)
+    }
+
+    handleDragEnd() {
+        this.isDragging = false
+        this.velocity.copy(this.dragVelocity).multiplyScalar(PARAMS.throw_multiplier)
+    }
+
+    getFrameDelta() { return this._frameDelta }
 
     updateOrientation(dt) {
         const vx = this.velocity.x

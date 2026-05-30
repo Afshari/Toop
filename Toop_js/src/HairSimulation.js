@@ -6,26 +6,8 @@ import constraintsSrc from './shaders/solve_constraints.glsl?raw'
 import sphereColSrc from './shaders/sphere_collision.glsl?raw'
 import groundColSrc from './shaders/ground_collision.glsl?raw'
 import updateVelocitySrc from './shaders/update_velocity.glsl?raw'
+import translateAllSrc from './shaders/translate_all.glsl?raw'
 
-// -------------------------------------------------------
-// Stub shaders - replaced by real shaders one by one
-// All position passes read from uPosition (custom uniform)
-// so we have explicit control over texture chaining
-// -------------------------------------------------------
-
-const passPosSrc = /* glsl */`
-uniform sampler2D uPosition;
-void main() {
-    vec2 uv = gl_FragCoord.xy / resolution.xy;
-    gl_FragColor = texture2D(uPosition, uv);
-}`
-
-const passVelSrc = /* glsl */`
-uniform sampler2D uVelocity;
-void main() {
-    vec2 uv = gl_FragCoord.xy / resolution.xy;
-    gl_FragColor = texture2D(uVelocity, uv);
-}`
 
 // copies texPosition (injected via dependency from posVar) to prevPosition
 const copyPosToPrevPosSrc = /* glsl */`
@@ -39,9 +21,9 @@ export class HairSimulation {
 
     constructor(renderer, strandGeometry) {
         this.renderer = renderer
-        this.texSize = strandGeometry.getTexSize()   // 296
+        this.texSize = strandGeometry.getTexSize()      // 296
         this.roots = strandGeometry.getRoots()
-        this.numStrands = this.roots.length              // 14549
+        this.numStrands = this.roots.length             // 14549
 
         this._initTextures()
         this._initCompute()
@@ -85,7 +67,7 @@ export class HairSimulation {
                 const invM = j === 0 ? 0.0 : invMasses[j - 1]
 
                 // initial position: hang straight down from root
-                posData[i4]     = PARAMS.sphere_center[0] + n.x * (PARAMS.sphere_radius + j * PARAMS.segment_length)
+                posData[i4] = PARAMS.sphere_center[0] + n.x * (PARAMS.sphere_radius + j * PARAMS.segment_length)
                 posData[i4 + 1] = PARAMS.sphere_center[1] + n.y * (PARAMS.sphere_radius + j * PARAMS.segment_length)
                 posData[i4 + 2] = PARAMS.sphere_center[2] + n.z * (PARAMS.sphere_radius + j * PARAMS.segment_length)
                 posData[i4 + 3] = invM      // inv_mass stored in w
@@ -205,6 +187,17 @@ export class HairSimulation {
             uDt: { value: 0.0 },
         })
         this._checkError(this.gpuVelocity.init(), 'gpuVelocity')
+
+        // ---- translate all - used when dragging ----
+        this.gpuTranslateAll = new GPUComputationRenderer(s, s, r)
+        this.translateAllVar = this.gpuTranslateAll.addVariable(
+            'texTranslateAllPos', translateAllSrc, this.initPosTex)
+        this.gpuTranslateAll.setVariableDependencies(this.translateAllVar, [])
+        Object.assign(this.translateAllVar.material.uniforms, {
+            uPosition: { value: this.initPosTex },
+            uDelta: { value: new THREE.Vector3() },
+        })
+        this._checkError(this.gpuTranslateAll.init(), 'gpuTranslateAll')
     }
 
     _checkError(err, name) {
@@ -223,7 +216,7 @@ export class HairSimulation {
     // Simulation update - substep loop
     // Called each frame from main.js
     // -------------------------------------------------------
-    update(dt, sphereCenter, sphereQuaternion) {
+    update(dt, sphereCenter, sphereQuaternion, isDragging, frameDelta) {
         if (dt <= 0) return
 
         const subDt = dt / PARAMS.num_substeps
@@ -232,6 +225,14 @@ export class HairSimulation {
 
         let currentPos = this.currentPosTex
         let currentVel = this.currentVelTex
+
+        // --- translate all particles when dragging ---
+        if (isDragging && frameDelta && frameDelta.length() > 1e-6) {
+            this.translateAllVar.material.uniforms.uPosition.value = currentPos
+            this.translateAllVar.material.uniforms.uDelta.value.copy(frameDelta)
+            this.gpuTranslateAll.compute()
+            currentPos = this.gpuTranslateAll.getCurrentRenderTarget(this.translateAllVar).texture
+        }
 
         for (let step = 0; step < PARAMS.num_substeps; step++) {
 

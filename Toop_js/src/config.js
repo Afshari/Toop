@@ -30,8 +30,8 @@ export const PARAMS = {
     drag_smoothing: 0.5,
     throw_multiplier: 0.3,
 
-    room_min: [-2.5, 0.0, -2.5],
-    room_max: [2.5, 3.0, 2.5],
+    room_min: [-4.0, 0.0, -4.0],
+    room_max: [4.0, 3.0, 4.0],
 
     max_tilt: 0.15,
     tilt_strength: 0.05,

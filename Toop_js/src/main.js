@@ -42,8 +42,28 @@ controls.target.set(0, 1.5, 0)
 
 const mouseNDC = new THREE.Vector2(0, 0)
 window.addEventListener('mousemove', (e) => {
-    mouseNDC.x = (e.clientX / window.innerWidth) * 2 - 1
+    mouseNDC.x =  (e.clientX / window.innerWidth)  * 2 - 1
     mouseNDC.y = -(e.clientY / window.innerHeight) * 2 + 1
+
+    if (sphere.isDragging) {
+        dragRaycaster.setFromCamera(mouseNDC, camera)
+        sphere.handleDragMove(dragRaycaster, camera, 1 / 60)
+    }
+})
+
+const dragRaycaster = new THREE.Raycaster()
+
+window.addEventListener('mousedown', (e) => {
+    dragRaycaster.setFromCamera(mouseNDC, camera)
+    const grabbed = sphere.handleDragStart(dragRaycaster)
+    if (grabbed) controls.enabled = false
+})
+
+window.addEventListener('mouseup', () => {
+    if (sphere.isDragging) {
+        sphere.handleDragEnd()
+        controls.enabled = true
+    }
 })
 
 // ------------------------------------------------------------
@@ -73,6 +93,13 @@ ground.position.y = PARAMS.ground_y
 ground.receiveShadow = true
 scene.add(ground)
 
+const roomBox = new THREE.Box3(
+    new THREE.Vector3(...PARAMS.room_min),
+    new THREE.Vector3(...PARAMS.room_max)
+)
+const roomHelper = new THREE.Box3Helper(roomBox, 0x444444)
+scene.add(roomHelper)
+
 // ------------------------------------------------------------
 // Strand geometry
 // ------------------------------------------------------------
@@ -101,12 +128,15 @@ function animate() {
     const dt = Math.min(Math.max(clock.getDelta(), 1 / 120), 0.05)
 
     sphere.update(dt)
-    sphere.updateOrientation(dt)
     sphere.updateIdleTimer(dt)
-    sphere.rotateTowardCamera(camera.position)
-    sphere.updateHeadTilt(camera, mouseNDC)
+    if(!sphere.isDragging) {
+        sphere.updateOrientation(dt)
+        sphere.rotateTowardCamera(camera.position)
+        sphere.updateHeadTilt(camera, mouseNDC)
+    }
 
-    simulation.update(dt, sphere.getCenter(), sphere.getOrientation())
+    simulation.update(dt, sphere.getCenter(), sphere.getOrientation(),
+        sphere.isDragging, sphere.getFrameDelta())
 
     if (strandGeometry.mesh.material.uniforms) {
         strandGeometry.mesh.material.uniforms.uPositionTex.value =
