@@ -37,6 +37,40 @@ export class Sphere {
         this._prevCenter = new THREE.Vector3(...PARAMS.sphere_center)
         this._dragHit = new THREE.Vector3()
 
+        // eye meshes
+        const eyeR = this.radius * PARAMS.eye_radius_factor
+        const eyeGeo = new THREE.SphereGeometry(eyeR, 16, 16)
+        const eyeMat = new THREE.MeshStandardMaterial({
+            color: PARAMS.eye_white_color,
+            emissive: 0xffffff,
+            emissiveIntensity: 0.3,
+        })
+        this.leftEyeMesh = new THREE.Mesh(eyeGeo, eyeMat)
+        this.rightEyeMesh = new THREE.Mesh(eyeGeo, eyeMat.clone())
+        scene.add(this.leftEyeMesh)
+        scene.add(this.rightEyeMesh)
+
+        const pupilR = eyeR * PARAMS.pupil_radius_factor
+        const pupilGeo = new THREE.SphereGeometry(pupilR, 32, 32)
+        const pupilMat = new THREE.MeshStandardMaterial({ color: PARAMS.eye_dark_color })
+        this.leftPupilMesh = new THREE.Mesh(pupilGeo, pupilMat)
+        this.rightPupilMesh = new THREE.Mesh(pupilGeo, pupilMat.clone())
+        scene.add(this.leftPupilMesh)
+        scene.add(this.rightPupilMesh)
+
+        // eye local directions (unit vectors, rotated by sphereOrientation each frame)
+        this._leftEyeDir = new THREE.Vector3(-0.25, 0.15, 1.0).normalize()
+        this._rightEyeDir = new THREE.Vector3(0.25, 0.15, 1.0).normalize()
+
+        // pre-allocated for updateEyes
+        this._eyeLocalVec = new THREE.Vector3()
+        this._eyeOutward = new THREE.Vector3()
+        this._lookDir = new THREE.Vector3()
+        this._finalDir = new THREE.Vector3()
+        this._pupilPos = new THREE.Vector3()
+        this._leftEyeWorld = new THREE.Vector3()
+        this._rightEyeWorld = new THREE.Vector3()
+
         // mesh
         const geo = new THREE.SphereGeometry(this.radius, 32, 32)
         const mat = new THREE.MeshStandardMaterial({ color: new THREE.Color(0.9, 0.15, 0.15) })
@@ -107,6 +141,59 @@ export class Sphere {
     handleDragEnd() {
         this.isDragging = false
         this.velocity.copy(this.dragVelocity).multiplyScalar(PARAMS.throw_multiplier)
+    }
+
+    updateEyes(camera, mouseNDC) {
+        const eyeR = this.radius * PARAMS.eye_radius_factor
+        const eyeOffset = this.radius * PARAMS.eye_offset_factor
+
+        const eyes = [
+            {
+                dir: this._leftEyeDir, eyeMesh: this.leftEyeMesh,
+                pupilMesh: this.leftPupilMesh, worldPos: this._leftEyeWorld
+            },
+            {
+                dir: this._rightEyeDir, eyeMesh: this.rightEyeMesh,
+                pupilMesh: this.rightPupilMesh, worldPos: this._rightEyeWorld
+            },
+        ]
+
+        for (const eye of eyes) {
+            // eye world position
+            this._eyeLocalVec.copy(eye.dir).multiplyScalar(eyeOffset)
+                .applyQuaternion(this.sphereOrientation)
+            eye.worldPos.copy(this.center).add(this._eyeLocalVec)
+            eye.eyeMesh.position.copy(eye.worldPos)
+
+            // outward normal of eye in world space
+            this._eyeOutward.copy(eye.dir)
+                .applyQuaternion(this.sphereOrientation).normalize()
+
+            // default pupil - centered facing outward
+            this._pupilPos.copy(eye.worldPos)
+                .addScaledVector(this._eyeOutward, eyeR * 0.55)
+
+            // ray-plane intersection for pupil tracking
+            this._raycaster.setFromCamera(mouseNDC, camera)
+            this._plane.setFromNormalAndCoplanarPoint(this._eyeOutward, eye.worldPos)
+            const hit = this._raycaster.ray.intersectPlane(this._plane, this._hitPoint)
+
+            if (hit) {
+                this._lookDir.copy(hit).sub(eye.worldPos)
+                const dist = this._lookDir.length()
+                if (dist > 1e-6) {
+                    this._lookDir.divideScalar(dist)
+                    // blend outward + look - keeps pupil on front hemisphere
+                    this._finalDir.copy(this._eyeOutward)
+                        .addScaledVector(this._lookDir, PARAMS.pupil_track_strength)
+                        .normalize()
+                    this._pupilPos.copy(eye.worldPos)
+                        .addScaledVector(this._finalDir, eyeR * 0.55)
+                }
+            }
+
+            eye.pupilMesh.position.copy(this._pupilPos)
+        }
     }
 
     getFrameDelta() { return this._frameDelta }

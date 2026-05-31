@@ -40,6 +40,13 @@ export const PARAMS = {
     idle_threshold: 0.5,
     idle_rotate_speed: 0.04,
 
-    wind_strength:  0.01,
+    wind_strength: 0.01,
     wind_frequency: 0.5,
+
+    eye_white_color: 0xffffff,
+    eye_dark_color: 0x111111,
+    eye_radius_factor: 0.18,
+    eye_offset_factor: 0.85,
+    pupil_radius_factor: 0.6,
+    pupil_track_strength: 0.4,
 }

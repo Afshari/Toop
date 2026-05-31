@@ -134,6 +134,7 @@ function animate() {
         sphere.rotateTowardCamera(camera.position)
         // sphere.updateHeadTilt(camera, mouseNDC)
     }
+    sphere.updateEyes(camera, mouseNDC)
 
     simulation.update(dt, sphere.getCenter(), sphere.getOrientation(),
         sphere.isDragging, sphere.getFrameDelta(), clock.getElapsedTime())
