@@ -132,7 +132,7 @@ function animate() {
     if(!sphere.isDragging) {
         sphere.updateOrientation(dt)
         sphere.rotateTowardCamera(camera.position)
-        sphere.updateHeadTilt(camera, mouseNDC)
+        // sphere.updateHeadTilt(camera, mouseNDC)
     }
     sphere.updateEyes(camera, mouseNDC)
 

@@ -7,8 +7,6 @@ import sphereColSrc from './shaders/sphere_collision.glsl?raw'
 import groundColSrc from './shaders/ground_collision.glsl?raw'
 import updateVelocitySrc from './shaders/update_velocity.glsl?raw'
 import translateAllSrc from './shaders/translate_all.glsl?raw'
-import constraintLambdaSrc from './shaders/constraint_lambda.glsl?raw'
-
 
 // copies texPosition (injected via dependency from posVar) to prevPosition
 const copyPosToPrevPosSrc = /* glsl */`
@@ -145,23 +143,14 @@ export class HairSimulation {
 
         // ---- constraints: xPBD ----
         this.gpuConstraints = new GPUComputationRenderer(s, s, r)
-        this.constraintPosVar = this.gpuConstraints.addVariable(
+        this.constraintVar = this.gpuConstraints.addVariable(
             'texConstraintPos', constraintsSrc, this.initPosTex)
-        this.constraintLambdaVar = this.gpuConstraints.addVariable(
-            'texConstraintLambda', constraintLambdaSrc, this.zeroTex)
-        this.gpuConstraints.setVariableDependencies(this.constraintPosVar, [])
-        this.gpuConstraints.setVariableDependencies(this.constraintLambdaVar, [])
-
-        const makeConstraintUniforms = () => ({
+        this.gpuConstraints.setVariableDependencies(this.constraintVar, [])
+        Object.assign(this.constraintVar.material.uniforms, {
             uPosition: { value: this.initPosTex },
-            uLambda: { value: this.zeroTex },
             uConstraintIndex: { value: 0.0 },
             uRestLength: { value: PARAMS.segment_length },
-            uCompliance: { value: PARAMS.distance_compliance },
-            uSubDt: { value: 0.0 },
         })
-        Object.assign(this.constraintPosVar.material.uniforms, makeConstraintUniforms())
-        Object.assign(this.constraintLambdaVar.material.uniforms, makeConstraintUniforms())
         this._checkError(this.gpuConstraints.init(), 'gpuConstraints')
 
         // ---- sphere collision ----
@@ -270,26 +259,13 @@ export class HairSimulation {
             let posTex = this.gpuIntegrate.getCurrentRenderTarget(this.posVar).texture
 
             // --- constraints ---
-            let lambdaTex = this.zeroTex  // reset lambda each substep
-
             for (let ci = 0; ci < PARAMS.num_segments; ci++) {
-                const cpU = this.constraintPosVar.material.uniforms
-                cpU.uPosition.value = posTex
-                cpU.uLambda.value = lambdaTex
-                cpU.uConstraintIndex.value = ci
-                cpU.uSubDt.value = subDt
-
-                const clU = this.constraintLambdaVar.material.uniforms
-                clU.uPosition.value = posTex
-                clU.uLambda.value = lambdaTex
-                clU.uConstraintIndex.value = ci
-                clU.uSubDt.value = subDt
-
+                this.constraintVar.material.uniforms.uPosition.value = posTex
+                this.constraintVar.material.uniforms.uConstraintIndex.value = ci
                 this.gpuConstraints.compute()
-                posTex = this.gpuConstraints.getCurrentRenderTarget(this.constraintPosVar).texture
-                lambdaTex = this.gpuConstraints.getCurrentRenderTarget(this.constraintLambdaVar).texture
+                posTex = this.gpuConstraints.getCurrentRenderTarget(this.constraintVar).texture
             }
-
+            
             // --- sphere collision ---
             this.sphereColVar.material.uniforms.uPosition.value = posTex
             this.sphereColVar.material.uniforms.uSphereCenter.value.copy(center)
