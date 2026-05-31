@@ -16,6 +16,7 @@ export const PARAMS = {
     num_substeps: 15,
     damping: 0.995,
     gravity: -1.0,
+    distance_compliance: 0,
 
     // Eye bald patches - directions in local sphere space (normalized)
     eye_left_dir: new THREE.Vector3(-0.25, 0.15, 1.0).normalize(),
@@ -29,6 +30,7 @@ export const PARAMS = {
     move_force: 3.0,
     drag_smoothing: 0.5,
     throw_multiplier: 0.3,
+    sphere_collision_compliance: 1e-3,
 
     room_min: [-4.0, 0.0, -4.0],
     room_max: [4.0, 3.0, 4.0],

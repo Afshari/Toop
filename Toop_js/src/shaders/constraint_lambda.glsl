@@ -12,16 +12,16 @@ vec2 indexToUV(float idx) {
 }
 
 void main() {
-    vec2 uv  = gl_FragCoord.xy / resolution.xy;
-    vec4 pos = texture2D(uPosition, uv);
+    vec2 uv = gl_FragCoord.xy / resolution.xy;
 
     float idx        = floor(gl_FragCoord.x) + floor(gl_FragCoord.y) * resolution.x;
     float strandBase = floor(idx / 6.0) * 6.0;
     int   localIdx   = int(idx - strandBase + 0.5);
     int   ci         = int(uConstraintIndex + 0.5);
 
-    if (localIdx != ci && localIdx != ci + 1) {
-        gl_FragColor = pos;
+    // only the parent particle stores lambda
+    if (localIdx != ci) {
+        gl_FragColor = texture2D(uLambda, uv);
         return;
     }
 
@@ -32,21 +32,16 @@ void main() {
     vec4 pB = texture2D(uPosition, uvB);
 
     float w0 = pA.w, w1 = pB.w, wSum = w0 + w1;
-    if (wSum < 1e-6) { gl_FragColor = pos; return; }
+    if (wSum < 1e-6) { gl_FragColor = texture2D(uLambda, uv); return; }
 
     vec3  d    = pB.xyz - pA.xyz;
     float dist = length(d);
-    if (dist  < 1e-6) { gl_FragColor = pos; return; }
+    if (dist  < 1e-6) { gl_FragColor = texture2D(uLambda, uv); return; }
 
     float alphaTilde = uCompliance / (uSubDt * uSubDt);
     float C          = dist - uRestLength;
-    float lambda     = texture2D(uLambda, indexToUV(strandBase + uConstraintIndex)).x;
+    float lambda     = texture2D(uLambda, uv).x;
     float dLambda    = (-C - alphaTilde * lambda) / (wSum + alphaTilde);
-    vec3  n          = d / dist;
 
-    if (localIdx == ci) {
-        gl_FragColor = vec4(pA.xyz - w0 * dLambda * n, pA.w);
-    } else {
-        gl_FragColor = vec4(pB.xyz + w1 * dLambda * n, pB.w);
-    }
+    gl_FragColor = vec4(lambda + dLambda, 0.0, 0.0, 0.0);
 }
