@@ -36,6 +36,7 @@ export class Sphere {
         this._frameDelta = new THREE.Vector3()
         this._prevCenter = new THREE.Vector3(...PARAMS.sphere_center)
         this._dragHit = new THREE.Vector3()
+        this._lastHit = new THREE.Vector3()
 
         // eye meshes
         const eyeR = this.radius * PARAMS.eye_radius_factor
@@ -80,7 +81,10 @@ export class Sphere {
     }
 
     update(dt) {
-        this._frameDelta.set(0, 0, 0)
+
+        if (this.isDragging) {
+            this.dragVelocity.copy(this._lastHit).sub(this.center).divideScalar(dt)
+        }
 
         if (!this.isDragging) {
             this.velocity.multiplyScalar(PARAMS.sphere_damping)
@@ -134,8 +138,8 @@ export class Sphere {
         const hit = raycaster.ray.intersectPlane(this._plane, this._dragHit)
         if (!hit) return
 
-        this.dragVelocity.copy(hit).sub(this.center).divideScalar(dt)
         this.center.lerp(hit, PARAMS.drag_smoothing)
+        this._lastHit.copy(hit)
 
         this.center.x = Math.max(this.roomMin.x + this.radius, Math.min(this.roomMax.x - this.radius, this.center.x))
         this.center.y = Math.max(this.roomMin.y + this.radius, Math.min(this.roomMax.y - this.radius, this.center.y))
