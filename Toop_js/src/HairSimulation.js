@@ -199,6 +199,7 @@ export class HairSimulation {
         Object.assign(this.translateAllVar.material.uniforms, {
             uPosition: { value: this.initPosTex },
             uDelta: { value: new THREE.Vector3() },
+            uDragSpeed: { value: 0.0 },
         })
         this._checkError(this.gpuTranslateAll.init(), 'gpuTranslateAll')
     }
@@ -237,8 +238,10 @@ export class HairSimulation {
 
         // --- translate all particles when dragging ---
         if (isDragging && frameDelta && frameDelta.length() > 1e-6) {
+            const dragSpeed = frameDelta.length() / dt
             this.translateAllVar.material.uniforms.uPosition.value = currentPos
             this.translateAllVar.material.uniforms.uDelta.value.copy(frameDelta)
+            this.translateAllVar.material.uniforms.uDragSpeed.value = dragSpeed
             this.gpuTranslateAll.compute()
             currentPos = this.gpuTranslateAll.getCurrentRenderTarget(this.translateAllVar).texture
         }
@@ -265,7 +268,7 @@ export class HairSimulation {
                 this.gpuConstraints.compute()
                 posTex = this.gpuConstraints.getCurrentRenderTarget(this.constraintVar).texture
             }
-            
+
             // --- sphere collision ---
             this.sphereColVar.material.uniforms.uPosition.value = posTex
             this.sphereColVar.material.uniforms.uSphereCenter.value.copy(center)

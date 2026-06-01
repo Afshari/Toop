@@ -8,6 +8,8 @@
         "preview": "vite preview"
     },
     "dependencies": {
+        "lil-gui": "^0.21.0",
+        "stats.js": "^0.17.0",
         "three": "^0.167.0"
     },
     "devDependencies": {

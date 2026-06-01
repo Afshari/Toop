@@ -34,7 +34,7 @@ void main() {
     vec3 v       = vel.xyz;
     float phase = gl_FragCoord.x * 0.11 + gl_FragCoord.y * 0.17;
     float noise = sin(phase + uTime * 2.1) * cos(phase * 0.53 + uTime * 1.3);
-    vec3  wind  = uWind * (1.0 + 12.0 * noise);
+    vec3  wind  = uWind * (1.0 + 9.0 * noise);
     v = (v + (vec3(0.0, uGravity, 0.0) + wind) * uDt) * uDamping;
     vec3 newPos  = pos.xyz + v * uDt;
 

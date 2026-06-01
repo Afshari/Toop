@@ -4,6 +4,9 @@ import { PARAMS } from './config.js'
 import { StrandGeometry } from './StrandGeometry.js'
 import { HairSimulation } from './HairSimulation.js'
 import { Sphere } from './Sphere.js'
+import Stats from 'stats.js'
+import GUI from 'lil-gui'
+
 const clock = new THREE.Clock()
 
 // ------------------------------------------------------------
@@ -16,10 +19,18 @@ renderer.shadowMap.enabled = true
 document.body.appendChild(renderer.domElement)
 
 // ------------------------------------------------------------
+// Stats
+// ------------------------------------------------------------
+const stats = new Stats()
+stats.showPanel(0)
+document.body.appendChild(stats.dom)
+
+// ------------------------------------------------------------
 // Scene
 // ------------------------------------------------------------
 const scene = new THREE.Scene()
-scene.background = new THREE.Color(0x111111)
+scene.background = new THREE.Color(0x1a1410)
+scene.fog = new THREE.Fog(0x1a1410, 8, 20)
 
 // ------------------------------------------------------------
 // Camera
@@ -77,6 +88,10 @@ dirLight.position.set(5, 8, 5)
 dirLight.castShadow = true
 scene.add(dirLight)
 
+const fillLight = new THREE.DirectionalLight(0x334466, 0.3)
+fillLight.position.set(-5, 2, -5)
+scene.add(fillLight)
+
 // ------------------------------------------------------------
 // Sphere
 // ------------------------------------------------------------
@@ -86,7 +101,10 @@ const sphere = new Sphere(scene)
 // Ground
 // ------------------------------------------------------------
 const groundGeo = new THREE.PlaneGeometry(20, 20)
-const groundMat = new THREE.MeshStandardMaterial({ color: 0x333333 })
+const groundMat = new THREE.MeshStandardMaterial({ 
+    color: 0x2a2018,
+    roughness: 0.8,
+})
 const ground = new THREE.Mesh(groundGeo, groundMat)
 ground.rotation.x = -Math.PI / 2
 ground.position.y = PARAMS.ground_y
@@ -108,6 +126,27 @@ scene.add(strandGeometry.mesh)
 const simulation = new HairSimulation(renderer, strandGeometry)
 strandGeometry.connectSimulation(simulation.getPositionTexture())
 
+
+// ------------------------------------------------------------
+// GUI
+// ------------------------------------------------------------
+const gui = new GUI()
+
+const simFolder = gui.addFolder('Simulation')
+simFolder.add(PARAMS, 'wind_strength', 0, 1, 0.01)
+simFolder.add(PARAMS, 'wind_frequency', 0, 2, 0.1)
+simFolder.add(PARAMS, 'damping', 0.98, 1.0, 0.001)
+simFolder.add(PARAMS, 'sphere_collision_compliance', 0, 0.01, 0.0001)
+
+const envFolder = gui.addFolder('Environment')
+// const envParams = { hairColor: '#ddccaa' }
+envFolder.addColor(PARAMS, 'hair_color').onChange(v => {
+    strandGeometry.mesh.material.uniforms.uColor.value.set(v)
+})
+envFolder.addColor(PARAMS, 'sphere_color').onChange(v => {
+    sphere.mesh.material.color.set(v)
+})
+
 // ------------------------------------------------------------
 // Resize handler
 // ------------------------------------------------------------
@@ -122,7 +161,10 @@ window.addEventListener('resize', () => {
 // Animation loop
 // ------------------------------------------------------------
 function animate() {
+    
     requestAnimationFrame(animate)
+    stats.begin()
+
     controls.update()
 
     const dt = Math.min(Math.max(clock.getDelta(), 1 / 120), 0.05)
@@ -145,6 +187,7 @@ function animate() {
     }
 
     renderer.render(scene, camera)
+    stats.end()
 }
 
 animate()

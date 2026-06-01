@@ -73,7 +73,7 @@ export class Sphere {
 
         // mesh
         const geo = new THREE.SphereGeometry(this.radius, 32, 32)
-        const mat = new THREE.MeshStandardMaterial({ color: new THREE.Color(0.9, 0.15, 0.15) })
+        const mat = new THREE.MeshStandardMaterial({ color: PARAMS.sphere_color })
         this.mesh = new THREE.Mesh(geo, mat)
         this.mesh.castShadow = true
         scene.add(this.mesh)
@@ -136,6 +136,10 @@ export class Sphere {
 
         this.dragVelocity.copy(hit).sub(this.center).divideScalar(dt)
         this.center.lerp(hit, PARAMS.drag_smoothing)
+
+        this.center.x = Math.max(this.roomMin.x + this.radius, Math.min(this.roomMax.x - this.radius, this.center.x))
+        this.center.y = Math.max(this.roomMin.y + this.radius, Math.min(this.roomMax.y - this.radius, this.center.y))
+        this.center.z = Math.max(this.roomMin.z + this.radius, Math.min(this.roomMax.z - this.radius, this.center.z))
     }
 
     handleDragEnd() {
