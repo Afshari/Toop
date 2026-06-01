@@ -259,44 +259,25 @@ export class Sphere {
 
     updateHeadTilt(camera, mouseNDC) {
         if (!this.isTrulyIdle()) {
-            this.sphereOrientation.copy(this.rollingOrientation)
+            this.sphereOrientation.slerp(this.rollingOrientation, 0.15)
             return
-        }
+        } else console.log("isTrulyIdle")
 
-        // ray from camera through mouse position
-        this._raycaster.setFromCamera(mouseNDC, camera)
+        const { max_tilt } = PARAMS
 
-        // plane through sphere center perpendicular to camera view direction
-        camera.getWorldDirection(this._forward)
-        this._plane.setFromNormalAndCoplanarPoint(this._forward, this.center)
-
-        const hit = this._raycaster.ray.intersectPlane(this._plane, this._hitPoint)
-        if (!hit) {
-            this.sphereOrientation.copy(this.rollingOrientation)
-            return
-        }
-
-        // offset from sphere center in camera right / up space
-        this._cameraRight.setFromMatrixColumn(camera.matrixWorld, 0).normalize()
-        this._cameraUp.setFromMatrixColumn(camera.matrixWorld, 1).normalize()
-
-        this._offset.copy(hit).sub(this.center)
-        const dx = this._offset.dot(this._cameraRight)
-        const dy = this._offset.dot(this._cameraUp)
-
-        const { max_tilt, tilt_strength } = PARAMS
-        const tiltX = Math.max(-max_tilt, Math.min(max_tilt, -dy * tilt_strength))
-        const tiltY = Math.max(-max_tilt, Math.min(max_tilt, dx * tilt_strength))
+        const tiltX = -mouseNDC.y * max_tilt
+        const tiltY = mouseNDC.x * max_tilt
 
         this._tiltY.setFromAxisAngle(this._axisY, tiltY)
         this._tiltX.setFromAxisAngle(this._axisX, tiltX)
 
-        // sphereOrientation = rolling * tilt (hair roots follow tilt too)
-        this.sphereOrientation
+        this._targetQuat
             .copy(this.rollingOrientation)
             .multiply(this._tiltY)
             .multiply(this._tiltX)
             .normalize()
+
+        this.sphereOrientation.slerp(this._targetQuat, 0.5)
     }
 
     getCenter() { return this.center }
