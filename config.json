@@ -1,0 +1,46 @@
+{
+    "sim": {
+        "num_strands": 14549,
+        "num_segments": 5,
+        "segment_length": 0.035,
+        "gravity": -1.0,
+        "num_substeps": 15,
+        "damping": 0.995,
+        "compliance": 0.001,
+        "sphere_radius": 0.4,
+        "sphere_center": { "x": 0.0, "y": 1.5, "z": 0.0 },
+        "wind_strength": 0.15,
+        "wind_frequency": 0.5
+    },
+    "sphere": {
+        "gravity": -1.0,
+        "restitution": 0.95,
+        "damping": 0.99,
+        "drag_smoothing": 0.5,
+        "throw_multiplier": 0.3,
+        "idle_threshold_sec": 0.5,
+        "idle_speed_threshold": 0.05
+    },
+    "room": {
+        "min": { "x": -2.5, "y": 0.0, "z": -2.5 },
+        "max": { "x":  2.5, "y": 3.0, "z":  2.5 },
+        "ground_y": 0.0
+    },
+    "bald_patches": {
+        "eye_left_dir":  { "x": -0.25, "y": 0.15, "z": 1.0 },
+        "eye_right_dir": { "x":  0.25, "y": 0.15, "z": 1.0 },
+        "eye_threshold": 0.97,
+        "top_threshold": 0.95
+    },
+    "render": {
+        "window_width": 1280,
+        "window_height": 720,
+        "vsync": true
+    },
+    "profile": {
+        "enabled": false,
+        "warmup_frames": 60,
+        "capture_frames": 300,
+        "output_dir": "output"
+    }
+}

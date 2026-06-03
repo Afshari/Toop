@@ -12,4 +12,15 @@
       <UniqueIdentifier>{4f37abcc-6621-47f3-97c7-950ef5ff9f4c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="src\AppRunner.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="inc\AppRunner.h">
+      <Filter>inc</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>
