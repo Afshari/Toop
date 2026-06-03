@@ -62,10 +62,10 @@ namespace Toop {
 
     struct ProfileConfig
     {
-        bool                  enabled = false;
-        int                   warmup_frames = 60;
-        int                   capture_frames = 300;
-        std::filesystem::path output_dir = "output";
+        bool        enabled = false;
+        int         warmup_frames = 60;
+        int         capture_frames = 300;
+        std::string output_dir = "output";
     };
 
     struct Config
@@ -78,7 +78,7 @@ namespace Toop {
         ProfileConfig   profile;
 
         // Throws std::runtime_error if file not found or invalid
-        static Config Load(const std::filesystem::path& filepath);
+        static Config Load(const std::string& filepath);
 
         // Safe fallback defaults
         static Config Default();

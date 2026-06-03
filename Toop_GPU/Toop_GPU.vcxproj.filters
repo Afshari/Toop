@@ -7,10 +7,36 @@
     <Filter Include="src">
       <UniqueIdentifier>{f5cfacce-0494-4f33-9c16-1bd463dbf72c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="inc\cpu">
+      <UniqueIdentifier>{cb7bdf97-b53f-44e5-92cf-765862ef9169}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="inc\gpu">
+      <UniqueIdentifier>{b6cb5572-5cef-49f1-b170-18770542966e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\cpu">
+      <UniqueIdentifier>{3b283297-36ef-4fc2-9f28-4b0d43919198}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\gpu">
+      <UniqueIdentifier>{4e08d119-bfe7-4e71-8451-6627dbc6d61a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="placeholder.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
+    <ClInclude Include="inc\gpu\HairSim.cuh">
+      <Filter>inc\gpu</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\cpu\HairSimulator.h">
+      <Filter>inc\cpu</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\gpu\CudaTimer.cuh">
+      <Filter>inc\gpu</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="src\gpu\HairSim.cu">
+      <Filter>src\gpu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\gpu\HairSimulator.cu">
+      <Filter>src\gpu</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>

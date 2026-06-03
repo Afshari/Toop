@@ -16,13 +16,13 @@ namespace Toop {
     }
 
     // --------------------------------------------------------------------------------
-    Config Config::Load(const std::filesystem::path& filepath)
+    Config Config::Load(const std::string& filepath)
     {
         if (!std::filesystem::exists(filepath))
-            throw std::runtime_error("[ERROR] Config file not found: " + filepath.string());
+            throw std::runtime_error("[ERROR] Config file not found: " + filepath);
 
         boost::property_tree::ptree pt;
-        boost::property_tree::read_json(filepath.string(), pt);
+        boost::property_tree::read_json(filepath, pt);
 
         Config cfg;
 

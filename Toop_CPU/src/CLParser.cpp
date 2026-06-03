@@ -42,12 +42,11 @@ namespace Toop {
             return Config::Default();
         }
 
-        auto config = Config::Load(configPath);
+        auto config = Config::Load(configPath.string());
 
-        if (config.profile.output_dir.is_relative())
+        if (std::filesystem::path(config.profile.output_dir).is_relative())
             config.profile.output_dir = std::filesystem::weakly_canonical(
-                configDir / config.profile.output_dir
-            );
+                configDir / config.profile.output_dir).string();
 
         return config;
     }

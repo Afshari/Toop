@@ -11,12 +11,18 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="inc\cpu\HairSimulator.h" />
+    <ClInclude Include="inc\gpu\HairSim.cuh" />
+    <ClInclude Include="inc\gpu\CudaTimer.cuh" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="src\gpu\HairSim.cu" />
+    <CudaCompile Include="src\gpu\HairSimulator.cu" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Toop_CPU\Toop_CPU.vcxproj">
       <Project>{971a8a27-7cdd-443c-90d3-1ab5a4c48e2f}</Project>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="placeholder.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B4A93E74-F043-9413-94BE-43E9B2826E7C}</ProjectGuid>
@@ -31,7 +37,7 @@
     <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
@@ -65,6 +71,7 @@
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
+      <Include>$(SolutionDir)Toop_CPU\inc;$(ProjectDir)inc;%(Include)</Include>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -85,6 +92,7 @@
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
+      <Include>$(SolutionDir)Toop_CPU\inc;$(ProjectDir)inc;%(Include)</Include>
     </CudaCompile>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
