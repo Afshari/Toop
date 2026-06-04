@@ -187,6 +187,7 @@ strandGeometry.connectSimulation(simulation.getPositionTexture())
 // GUI
 // ------------------------------------------------------------
 const gui = new GUI()
+gui.close()
 
 const simFolder = gui.addFolder('Simulation')
 simFolder.add(PARAMS, 'wind_strength', 0, 1, 0.01)
