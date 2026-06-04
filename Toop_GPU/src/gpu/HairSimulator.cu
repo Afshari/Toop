@@ -1,6 +1,7 @@
 #include "cpu/HairSimulator.h"
 #include "gpu/HairSim.cuh"
 #include "gpu/CudaTimer.cuh"
+#include "FibonacciSphere.h"
 #include <cuda_runtime.h>
 #include <iostream>
 #include <vector>
@@ -21,7 +22,7 @@ namespace Toop {
     }
 
     // --------------------------------------------------------------------------------
-    void HairSimulator::Init(const SimConfig& config)
+    void HairSimulator::Init(const SimConfig& config, const BaldPatchConfig& bald_patches)
     {
         m_num_strands = config.num_strands;
         m_num_segments = config.num_segments;
@@ -38,6 +39,7 @@ namespace Toop {
 
         AllocateBuffers();
         UploadInitialPositions();
+        UploadRootDirs(config, bald_patches);
 
         m_initialized = true;
         std::cout << "[INFO] HairSimulator initialized." << std::endl;
@@ -59,6 +61,7 @@ namespace Toop {
         CheckCuda(cudaMalloc(&m_d_inv_mass, bytes), "cudaMalloc inv_mass");
         CheckCuda(cudaMalloc(&m_d_rest_lengths,
             m_num_strands * m_num_segments * sizeof(float)), "cudaMalloc rest_lengths");
+        CheckCuda(cudaMalloc(&m_d_root_dirs, m_num_strands * sizeof(float3)), "cudaMalloc root_dirs");
 
         std::cout << "[INFO] GPU buffers allocated: "
             << (bytes * 7 + m_num_strands * m_num_segments * sizeof(float))
@@ -105,6 +108,32 @@ namespace Toop {
     }
 
     // --------------------------------------------------------------------------------
+    void HairSimulator::UploadRootDirs(
+        const SimConfig& config,
+        const BaldPatchConfig& bald_patches)
+    {
+        auto cpu_dirs = FibonacciSphere::Generate(m_num_strands, bald_patches);
+
+        // convert float3cpu to CUDA float3
+        std::vector<float3> gpu_dirs(m_num_strands);
+        for (int i = 0; i < m_num_strands; i++)
+        {
+            gpu_dirs[i].x = cpu_dirs[i].x;
+            gpu_dirs[i].y = cpu_dirs[i].y;
+            gpu_dirs[i].z = cpu_dirs[i].z;
+        }
+
+        CheckCuda(cudaMemcpy(
+            m_d_root_dirs,
+            gpu_dirs.data(),
+            m_num_strands * sizeof(float3),
+            cudaMemcpyHostToDevice), "memcpy root_dirs");
+
+        std::cout << "[INFO] Root dirs uploaded: "
+            << m_num_strands << " strands." << std::endl;
+    }
+
+    // --------------------------------------------------------------------------------
     StepTimings HairSimulator::Step(float dt)
     {
         StepTimings timings;
@@ -112,6 +141,8 @@ namespace Toop {
 
         float sub_dt = dt / m_num_substeps;
 
+        CudaTimer timer_roots;
+        CudaTimer timer_integrate;
         CudaTimer timer_sphere;
         CudaTimer timer_ground;
         CudaTimer timer_total;
@@ -120,6 +151,33 @@ namespace Toop {
 
         for (int i = 0; i < m_num_substeps; i++)
         {
+            timer_roots.Start();
+            launch_update_roots(
+                m_d_pos_x, m_d_pos_y, m_d_pos_z,
+                m_d_prev_pos_x, m_d_prev_pos_y, m_d_prev_pos_z,
+                static_cast<float3*>(m_d_root_dirs),
+                m_num_strands,
+                m_num_segments + 1,
+                m_sphere_cx, m_sphere_cy, m_sphere_cz,
+                m_sphere_radius,
+                m_sphere_qx, m_sphere_qy, m_sphere_qz, m_sphere_qw,
+                m_threads_per_block);
+            timer_roots.Stop();
+            timings.update_roots_ms += timer_roots.ElapsedMs();
+
+            timer_integrate.Start();
+            launch_integrate(
+                m_d_pos_x, m_d_pos_y, m_d_pos_z,
+                m_d_prev_pos_x, m_d_prev_pos_y, m_d_prev_pos_z,
+                m_d_inv_mass,
+                m_total_particles,
+                m_gravity,
+                m_damping,
+                sub_dt,
+                m_threads_per_block);
+            timer_integrate.Stop();
+            timings.integrate_ms += timer_integrate.ElapsedMs();
+
             timer_sphere.Start();
             launch_solve_sphere_collision(
                 m_d_pos_x, m_d_pos_y, m_d_pos_z,
@@ -146,7 +204,6 @@ namespace Toop {
 
         timer_total.Stop();
         timings.total_ms = timer_total.ElapsedMs();
-
         return timings;
     }
 
@@ -169,6 +226,7 @@ namespace Toop {
         cudaFree(m_d_prev_pos_z);
         cudaFree(m_d_inv_mass);
         cudaFree(m_d_rest_lengths);
+        cudaFree(m_d_root_dirs);
 
         m_d_pos_x = nullptr;
         m_d_pos_y = nullptr;
@@ -178,6 +236,7 @@ namespace Toop {
         m_d_prev_pos_z = nullptr;
         m_d_inv_mass = nullptr;
         m_d_rest_lengths = nullptr;
+        m_d_root_dirs = nullptr;
     }
 
 } // namespace Toop

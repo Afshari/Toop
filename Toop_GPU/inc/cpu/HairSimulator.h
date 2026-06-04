@@ -7,13 +7,15 @@ namespace Toop {
     {
         float sphere_collision_ms = 0.0f;
         float ground_collision_ms = 0.0f;
+        float integrate_ms = 0.0f;
+        float update_roots_ms = 0.0f;
         float total_ms = 0.0f;
     };
 
     class HairSimulator
     {
     public:
-        void Init(const SimConfig& config);
+        void Init(const SimConfig& sim, const BaldPatchConfig& bald_patches);
         StepTimings Step(float dt);
         void Shutdown();
 
@@ -24,6 +26,7 @@ namespace Toop {
         void AllocateBuffers();
         void FreeBuffers();
         void UploadInitialPositions();
+        void UploadRootDirs(const SimConfig& config, const BaldPatchConfig& bald_patches);
 
         // sim params - stored from config at Init time
         int   m_num_strands = 0;
@@ -51,6 +54,12 @@ namespace Toop {
         float* m_d_prev_pos_z = nullptr;
         float* m_d_inv_mass = nullptr;
         float* m_d_rest_lengths = nullptr;
+        void* m_d_root_dirs = nullptr;
+
+        float m_sphere_qx = 0.0f;
+        float m_sphere_qy = 0.0f;
+        float m_sphere_qz = 0.0f;
+        float m_sphere_qw = 1.0f;
     };
 
 } // namespace Toop

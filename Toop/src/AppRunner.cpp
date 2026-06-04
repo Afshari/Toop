@@ -55,7 +55,7 @@ namespace Toop {
         std::cout << "[INFO] Output dir: " << config.profile.output_dir << std::endl;
 
         HairSimulator sim;
-        sim.Init(config.sim);
+        sim.Init(config.sim, config.bald_patches);
 
         // warmup - not measured
         std::cout << "[INFO] Running warmup..." << std::endl;

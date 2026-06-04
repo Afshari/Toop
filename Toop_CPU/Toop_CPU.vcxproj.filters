@@ -21,12 +21,18 @@
     <ClInclude Include="inc\CLParser.h">
       <Filter>inc</Filter>
     </ClInclude>
+    <ClInclude Include="inc\FibonacciSphere.h">
+      <Filter>inc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Config.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\CLParser.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\FibonacciSphere.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

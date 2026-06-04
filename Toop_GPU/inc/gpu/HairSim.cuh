@@ -29,4 +29,35 @@ namespace Toop {
         float  sub_dt,
         int    threads_per_block);
 
+    void launch_integrate(
+        float* pos_x,
+        float* pos_y,
+        float* pos_z,
+        float* prev_pos_x,
+        float* prev_pos_y,
+        float* prev_pos_z,
+        const float* inv_mass,
+        int   total_particles,
+        float gravity_y,
+        float damping,
+        float dt,
+        int   threads_per_block);
+
+    void launch_update_roots(
+        float* pos_x,
+        float* pos_y,
+        float* pos_z,
+        float* prev_pos_x,
+        float* prev_pos_y,
+        float* prev_pos_z,
+        const float3* root_dirs,
+        int   num_strands,
+        int   particles_per_strand,
+        float sphere_cx,
+        float sphere_cy,
+        float sphere_cz,
+        float sphere_radius,
+        float qx, float qy, float qz, float qw,
+        int   threads_per_block);
+
 } // namespace Toop
