@@ -73,6 +73,9 @@
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <Include>$(SolutionDir)Toop_CPU\inc;$(ProjectDir)inc;%(Include)</Include>
     </CudaCompile>
+    <CudaLink>
+      <AdditionalDependencies>curand.lib</AdditionalDependencies>
+    </CudaLink>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -94,6 +97,9 @@
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <Include>$(SolutionDir)Toop_CPU\inc;$(ProjectDir)inc;%(Include)</Include>
     </CudaCompile>
+    <CudaLink>
+      <AdditionalDependencies>curand.lib</AdditionalDependencies>
+    </CudaLink>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

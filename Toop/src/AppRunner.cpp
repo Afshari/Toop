@@ -16,7 +16,7 @@ namespace Toop {
         auto csvPath = std::filesystem::path(outputDir) / "headless_timings.csv";
 
         std::ofstream csv(csvPath);
-        csv << "frame,sphere_collision_ms,ground_collision_ms,total_ms\n";
+        csv << "frame,sphere_collision_ms,ground_collision_ms,integrate_ms,update_roots_ms,constraints_ms,total_ms\n";
 
         for (size_t i = 0; i < timings.size(); i++)
         {
@@ -24,6 +24,9 @@ namespace Toop {
                 << std::fixed << std::setprecision(4)
                 << timings[i].sphere_collision_ms << ","
                 << timings[i].ground_collision_ms << ","
+                << timings[i].integrate_ms << ","
+                << timings[i].update_roots_ms << ","
+                << timings[i].constraints_ms << ","
                 << timings[i].total_ms << "\n";
         }
 

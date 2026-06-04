@@ -40,6 +40,7 @@ namespace Toop {
         AllocateBuffers();
         UploadInitialPositions();
         UploadRootDirs(config, bald_patches);
+        InitRandStates();
 
         m_initialized = true;
         std::cout << "[INFO] HairSimulator initialized." << std::endl;
@@ -62,6 +63,10 @@ namespace Toop {
         CheckCuda(cudaMalloc(&m_d_rest_lengths,
             m_num_strands * m_num_segments * sizeof(float)), "cudaMalloc rest_lengths");
         CheckCuda(cudaMalloc(&m_d_root_dirs, m_num_strands * sizeof(float3)), "cudaMalloc root_dirs");
+        CheckCuda(cudaMalloc(&m_d_lambdas,
+            m_num_strands * m_num_segments * sizeof(float)), "cudaMalloc lambdas");
+        CheckCuda(cudaMalloc(&m_d_rand_states,
+            m_total_particles * sizeof(curandState)), "cudaMalloc rand_states");
 
         std::cout << "[INFO] GPU buffers allocated: "
             << (bytes * 7 + m_num_strands * m_num_segments * sizeof(float))
@@ -134,6 +139,18 @@ namespace Toop {
     }
 
     // --------------------------------------------------------------------------------
+    void HairSimulator::InitRandStates()
+    {
+        launch_init_rand_states(
+            static_cast<curandState*>(m_d_rand_states),
+            m_total_particles,
+            1234ULL,
+            m_threads_per_block);
+
+        std::cout << "[INFO] curand states initialized." << std::endl;
+    }
+
+    // --------------------------------------------------------------------------------
     StepTimings HairSimulator::Step(float dt)
     {
         StepTimings timings;
@@ -145,6 +162,7 @@ namespace Toop {
         CudaTimer timer_integrate;
         CudaTimer timer_sphere;
         CudaTimer timer_ground;
+        CudaTimer timer_constraints;
         CudaTimer timer_total;
 
         timer_total.Start();
@@ -178,6 +196,26 @@ namespace Toop {
             timer_integrate.Stop();
             timings.integrate_ms += timer_integrate.ElapsedMs();
 
+            // reset lambdas at start of each substep
+            CheckCuda(cudaMemset(m_d_lambdas, 0,
+                m_num_strands * m_num_segments * sizeof(float)),
+                "cudaMemset lambdas");
+
+            timer_constraints.Start();
+            launch_solve_constraints_xpbd(
+                m_d_pos_x, m_d_pos_y, m_d_pos_z,
+                m_d_inv_mass,
+                m_d_rest_lengths,
+                m_d_lambdas,
+                m_num_strands,
+                m_num_segments,
+                m_num_segments + 1,
+                m_compliance,
+                sub_dt,
+                m_threads_per_block);
+            timer_constraints.Stop();
+            timings.constraints_ms += timer_constraints.ElapsedMs();
+
             timer_sphere.Start();
             launch_solve_sphere_collision(
                 m_d_pos_x, m_d_pos_y, m_d_pos_z,
@@ -208,6 +246,24 @@ namespace Toop {
     }
 
     // --------------------------------------------------------------------------------
+    void HairSimulator::TranslateWithPerturbation(
+        float delta_x, float delta_y, float delta_z,
+        float noise_scale)
+    {
+        if (!m_initialized) return;
+
+        launch_translate_with_perturbation(
+            m_d_pos_x, m_d_pos_y, m_d_pos_z,
+            m_d_prev_pos_x, m_d_prev_pos_y, m_d_prev_pos_z,
+            m_d_inv_mass,
+            static_cast<curandState*>(m_d_rand_states),
+            m_total_particles,
+            delta_x, delta_y, delta_z,
+            noise_scale,
+            m_threads_per_block);
+    }
+
+    // --------------------------------------------------------------------------------
     void HairSimulator::Shutdown()
     {
         FreeBuffers();
@@ -227,6 +283,7 @@ namespace Toop {
         cudaFree(m_d_inv_mass);
         cudaFree(m_d_rest_lengths);
         cudaFree(m_d_root_dirs);
+        cudaFree(m_d_lambdas);
 
         m_d_pos_x = nullptr;
         m_d_pos_y = nullptr;
@@ -237,6 +294,7 @@ namespace Toop {
         m_d_inv_mass = nullptr;
         m_d_rest_lengths = nullptr;
         m_d_root_dirs = nullptr;
+        m_d_lambdas = nullptr;
     }
 
 } // namespace Toop

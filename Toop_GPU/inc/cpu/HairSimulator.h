@@ -9,6 +9,7 @@ namespace Toop {
         float ground_collision_ms = 0.0f;
         float integrate_ms = 0.0f;
         float update_roots_ms = 0.0f;
+        float constraints_ms = 0.0f;
         float total_ms = 0.0f;
     };
 
@@ -17,6 +18,7 @@ namespace Toop {
     public:
         void Init(const SimConfig& sim, const BaldPatchConfig& bald_patches);
         StepTimings Step(float dt);
+        void TranslateWithPerturbation(float delta_x, float delta_y, float delta_z, float noise_scale);
         void Shutdown();
 
         bool IsInitialized() const { return m_initialized; }
@@ -27,6 +29,7 @@ namespace Toop {
         void FreeBuffers();
         void UploadInitialPositions();
         void UploadRootDirs(const SimConfig& config, const BaldPatchConfig& bald_patches);
+        void InitRandStates();
 
         // sim params - stored from config at Init time
         int   m_num_strands = 0;
@@ -60,6 +63,9 @@ namespace Toop {
         float m_sphere_qy = 0.0f;
         float m_sphere_qz = 0.0f;
         float m_sphere_qw = 1.0f;
+
+        float* m_d_lambdas = nullptr;
+        void* m_d_rand_states = nullptr;
     };
 
 } // namespace Toop

@@ -140,6 +140,106 @@ namespace Toop {
         prev_pos_z[root_idx] = root_z;
     }
 
+    __global__ void k_solve_constraints_xpbd(
+        float* __restrict__ pos_x,
+        float* __restrict__ pos_y,
+        float* __restrict__ pos_z,
+        const float* __restrict__ inv_mass,
+        const float* __restrict__ rest_lengths,
+        float* __restrict__ lambdas,
+        int   num_strands,
+        int   num_segments,
+        int   particles_per_strand,
+        float compliance,
+        float sub_dt)
+    {
+        int sid = blockIdx.x * blockDim.x + threadIdx.x;
+        if (sid >= num_strands) return;
+
+        float alpha_tilde = compliance / (sub_dt * sub_dt);
+        int   base = sid * particles_per_strand;
+        int   lambda_base = sid * num_segments;
+
+        for (int i = 0; i < num_segments; i++)
+        {
+            int id0 = base + i;
+            int id1 = base + i + 1;
+
+            float dx = pos_x[id1] - pos_x[id0];
+            float dy = pos_y[id1] - pos_y[id0];
+            float dz = pos_z[id1] - pos_z[id0];
+
+            float dist = sqrtf(dx * dx + dy * dy + dz * dz);
+            if (dist < 1e-6f) continue;
+
+            float w0 = inv_mass[id0];
+            float w1 = inv_mass[id1];
+            float w_sum = w0 + w1;
+            if (w_sum < 1e-6f) continue;
+
+            float C = dist - rest_lengths[lambda_base + i];
+            float lambda = lambdas[lambda_base + i];
+            float d_lambda = (-C - alpha_tilde * lambda) / (w_sum + alpha_tilde);
+
+            lambdas[lambda_base + i] += d_lambda;
+
+            float inv_dist = 1.0f / dist;
+            float nx = dx * inv_dist;
+            float ny = dy * inv_dist;
+            float nz = dz * inv_dist;
+
+            pos_x[id0] -= w0 * d_lambda * nx;
+            pos_y[id0] -= w0 * d_lambda * ny;
+            pos_z[id0] -= w0 * d_lambda * nz;
+
+            pos_x[id1] += w1 * d_lambda * nx;
+            pos_y[id1] += w1 * d_lambda * ny;
+            pos_z[id1] += w1 * d_lambda * nz;
+        }
+    }
+
+    __global__ void k_init_rand_states(
+        curandState* __restrict__ states,
+        int total_particles,
+        unsigned long long seed)
+    {
+        int idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx >= total_particles) return;
+        curand_init(seed, idx, 0, &states[idx]);
+    }
+
+    __global__ void k_translate_with_perturbation(
+        float* __restrict__ pos_x,
+        float* __restrict__ pos_y,
+        float* __restrict__ pos_z,
+        float* __restrict__ prev_pos_x,
+        float* __restrict__ prev_pos_y,
+        float* __restrict__ prev_pos_z,
+        const float* __restrict__ inv_mass,
+        curandState* __restrict__ states,
+        int   total_particles,
+        float delta_x,
+        float delta_y,
+        float delta_z,
+        float noise_scale)
+    {
+        int idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx >= total_particles) return;
+        if (inv_mass[idx] == 0.0f) return;
+
+        float nx = (curand_uniform(&states[idx]) * 2.0f - 1.0f) * noise_scale;
+        float ny = (curand_uniform(&states[idx]) * 2.0f - 1.0f) * noise_scale;
+        float nz = (curand_uniform(&states[idx]) * 2.0f - 1.0f) * noise_scale;
+
+        pos_x[idx] += delta_x + nx;
+        pos_y[idx] += delta_y + ny;
+        pos_z[idx] += delta_z + nz;
+
+        prev_pos_x[idx] += delta_x + nx;
+        prev_pos_y[idx] += delta_y + ny;
+        prev_pos_z[idx] += delta_z + nz;
+    }
+
     // --------------------------------------------------------------------------------
     // HOST LAUNCHERS
     // --------------------------------------------------------------------------------
@@ -228,6 +328,65 @@ namespace Toop {
             sphere_cx, sphere_cy, sphere_cz,
             sphere_radius,
             qx, qy, qz, qw);
+    }
+
+    void launch_solve_constraints_xpbd(
+        float* pos_x,
+        float* pos_y,
+        float* pos_z,
+        const float* inv_mass,
+        const float* rest_lengths,
+        float* lambdas,
+        int   num_strands,
+        int   num_segments,
+        int   particles_per_strand,
+        float compliance,
+        float sub_dt,
+        int   threads_per_block)
+    {
+        int blocks = (num_strands + threads_per_block - 1) / threads_per_block;
+        k_solve_constraints_xpbd << <blocks, threads_per_block >> > (
+            pos_x, pos_y, pos_z,
+            inv_mass, rest_lengths, lambdas,
+            num_strands, num_segments, particles_per_strand,
+            compliance, sub_dt);
+    }
+
+    void launch_init_rand_states(
+        curandState* states,
+        int          total_particles,
+        unsigned long long seed,
+        int          threads_per_block)
+    {
+        int blocks = (total_particles + threads_per_block - 1) / threads_per_block;
+        k_init_rand_states << <blocks, threads_per_block >> > (states, total_particles, seed);
+        cudaDeviceSynchronize();
+    }
+
+    void launch_translate_with_perturbation(
+        float* pos_x,
+        float* pos_y,
+        float* pos_z,
+        float* prev_pos_x,
+        float* prev_pos_y,
+        float* prev_pos_z,
+        const float* inv_mass,
+        curandState* states,
+        int   total_particles,
+        float delta_x,
+        float delta_y,
+        float delta_z,
+        float noise_scale,
+        int   threads_per_block)
+    {
+        int blocks = (total_particles + threads_per_block - 1) / threads_per_block;
+        k_translate_with_perturbation << <blocks, threads_per_block >> > (
+            pos_x, pos_y, pos_z,
+            prev_pos_x, prev_pos_y, prev_pos_z,
+            inv_mass, states,
+            total_particles,
+            delta_x, delta_y, delta_z,
+            noise_scale);
     }
 
 } // namespace Toop
