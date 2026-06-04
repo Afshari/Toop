@@ -41,7 +41,7 @@ const camera = new THREE.PerspectiveCamera(
     0.1,
     100
 )
-camera.position.set(0, 1.5, 4)
+camera.position.set(0, 1.0, 6)
 
 // ------------------------------------------------------------
 // Controls
@@ -49,7 +49,7 @@ camera.position.set(0, 1.5, 4)
 const controls = new OrbitControls(camera, renderer.domElement)
 controls.enableDamping = true
 controls.dampingFactor = 0.05
-controls.target.set(0, 1.5, 0)
+controls.target.set(0, 1.0, 0)
 
 const mouseNDC = new THREE.Vector2(0, 0)
 window.addEventListener('mousemove', (e) => {
@@ -74,6 +74,23 @@ window.addEventListener('mouseup', () => {
     if (sphere.isDragging) {
         sphere.handleDragEnd()
         controls.enabled = true
+    }
+})
+
+function setCameraPreset(distance) {
+    const spherePos = sphere.getCenter()
+    const dir = camera.position.clone().sub(spherePos).normalize()
+    camera.position.copy(spherePos).addScaledVector(dir, distance)
+    controls.target.copy(spherePos)
+    controls.update()
+}
+
+window.addEventListener('keydown', (e) => {
+    switch (e.key) {
+        case '1': setCameraPreset(3.0); break
+        case '2': setCameraPreset(4.0); break
+        case '3': setCameraPreset(6.0); break
+        case '4': setCameraPreset(8.0); break
     }
 })
 
