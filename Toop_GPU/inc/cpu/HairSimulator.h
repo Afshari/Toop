@@ -23,6 +23,7 @@ namespace Toop {
 
         bool IsInitialized() const { return m_initialized; }
         int  GetTotalParticles() const { return m_total_particles; }
+        void SetSphereState(float px, float py, float pz, float qx, float qy, float qz, float qw);
 
     private:
         void AllocateBuffers();

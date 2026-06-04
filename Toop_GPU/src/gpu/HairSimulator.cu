@@ -264,6 +264,20 @@ namespace Toop {
     }
 
     // --------------------------------------------------------------------------------
+    void HairSimulator::SetSphereState(
+        float px, float py, float pz,
+        float qx, float qy, float qz, float qw)
+    {
+        m_sphere_cx = px;
+        m_sphere_cy = py;
+        m_sphere_cz = pz;
+        m_sphere_qx = qx;
+        m_sphere_qy = qy;
+        m_sphere_qz = qz;
+        m_sphere_qw = qw;
+    }
+
+    // --------------------------------------------------------------------------------
     void HairSimulator::Shutdown()
     {
         FreeBuffers();

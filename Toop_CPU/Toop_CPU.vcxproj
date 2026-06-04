@@ -22,11 +22,13 @@
     <ClInclude Include="inc\CLParser.h" />
     <ClInclude Include="inc\Config.h" />
     <ClInclude Include="inc\FibonacciSphere.h" />
+    <ClInclude Include="inc\SpherePhysics.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\CLParser.cpp" />
     <ClCompile Include="src\Config.cpp" />
     <ClCompile Include="src\FibonacciSphere.cpp" />
+    <ClCompile Include="src\SpherePhysics.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

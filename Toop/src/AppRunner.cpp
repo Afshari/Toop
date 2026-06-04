@@ -1,5 +1,6 @@
 #include "AppRunner.h"
 #include "cpu/HairSimulator.h"
+#include "SpherePhysics.h"
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -60,10 +61,19 @@ namespace Toop {
         HairSimulator sim;
         sim.Init(config.sim, config.bald_patches);
 
+        Toop::SpherePhysics sphere;
+        sphere.Init(config.sphere, config.room, config.sim.sphere_radius);
+
         // warmup - not measured
         std::cout << "[INFO] Running warmup..." << std::endl;
         for (int i = 0; i < config.profile.warmup_frames; i++)
+        {
+            sphere.Update(1.0f / 60.0f);
+            sim.SetSphereState(
+                sphere.GetPosX(), sphere.GetPosY(), sphere.GetPosZ(),
+                sphere.GetQuatX(), sphere.GetQuatY(), sphere.GetQuatZ(), sphere.GetQuatW());
             sim.Step(1.0f / 60.0f);
+        }
 
         // capture - measured
         std::cout << "[INFO] Running capture..." << std::endl;
@@ -71,7 +81,13 @@ namespace Toop {
         timings.reserve(config.profile.capture_frames);
 
         for (int i = 0; i < config.profile.capture_frames; i++)
+        {
+            sphere.Update(1.0f / 60.0f);
+            sim.SetSphereState(
+                sphere.GetPosX(), sphere.GetPosY(), sphere.GetPosZ(),
+                sphere.GetQuatX(), sphere.GetQuatY(), sphere.GetQuatZ(), sphere.GetQuatW());
             timings.push_back(sim.Step(1.0f / 60.0f));
+        }
 
         // summary
         float avg_total = 0.0f;
