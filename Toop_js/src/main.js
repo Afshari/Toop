@@ -51,6 +51,9 @@ controls.enableDamping = true
 controls.dampingFactor = 0.05
 controls.target.set(0, 1.0, 0)
 
+// ------------------------------------------------------------
+// Mouse
+// ------------------------------------------------------------
 const mouseNDC = new THREE.Vector2(0, 0)
 window.addEventListener('mousemove', (e) => {
     mouseNDC.x =  (e.clientX / window.innerWidth)  * 2 - 1
@@ -77,6 +80,9 @@ window.addEventListener('mouseup', () => {
     }
 })
 
+// ------------------------------------------------------------
+// Keyboard
+// ------------------------------------------------------------
 function setCameraPreset(distance) {
     const spherePos = sphere.getCenter()
     const dir = camera.position.clone().sub(spherePos).normalize()
@@ -92,6 +98,39 @@ window.addEventListener('keydown', (e) => {
         case '3': setCameraPreset(6.0); break
         case '4': setCameraPreset(8.0); break
     }
+})
+
+
+// ------------------------------------------------------------
+// Touch
+// ------------------------------------------------------------
+window.addEventListener('touchstart', (e) => {
+    const touch = e.touches[0]
+    mouseNDC.x =  (touch.clientX / window.innerWidth)  * 2 - 1
+    mouseNDC.y = -(touch.clientY / window.innerHeight) * 2 + 1
+    dragRaycaster.setFromCamera(mouseNDC, camera)
+    const grabbed = sphere.handleDragStart(dragRaycaster)
+    if (grabbed) controls.enabled = false
+    e.preventDefault()
+}, { passive: false })
+
+window.addEventListener('touchmove', (e) => {
+    const touch = e.touches[0]
+    mouseNDC.x =  (touch.clientX / window.innerWidth)  * 2 - 1
+    mouseNDC.y = -(touch.clientY / window.innerHeight) * 2 + 1
+    if (sphere.isDragging) {
+        dragRaycaster.setFromCamera(mouseNDC, camera)
+        sphere.handleDragMove(dragRaycaster, camera, 1 / 60)
+    }
+    e.preventDefault()
+}, { passive: false })
+
+window.addEventListener('touchend', () => {
+    if (sphere.isDragging) {
+        sphere.handleDragEnd()
+        controls.enabled = true
+    }
+    mouseNDC.set(0, 0)
 })
 
 // ------------------------------------------------------------
