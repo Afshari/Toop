@@ -61,7 +61,7 @@ namespace Toop {
         HairSimulator sim;
         sim.Init(config.sim, config.bald_patches);
 
-        Toop::SpherePhysics sphere;
+        SpherePhysics sphere;
         sphere.Init(config.sphere, config.room, config.sim.sphere_radius);
 
         // warmup - not measured

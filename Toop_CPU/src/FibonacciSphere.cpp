@@ -1,6 +1,8 @@
 #include "FibonacciSphere.h"
 #include <cmath>
 #include <stdexcept>
+#include <algorithm>
+#include <random>
 
 namespace Toop {
 
@@ -55,10 +57,10 @@ namespace Toop {
         int                    num_strands,
         const BaldPatchConfig& bald_patches)
     {
-        std::vector<float3cpu> result;
-        result.reserve(num_strands);
+        std::vector<float3cpu> all_points;
+        all_points.reserve(kMaxSamples);
 
-        for (int i = 0; i < kMaxSamples && (int)result.size() < num_strands; i++)
+        for (int i = 0; i < kMaxSamples; i++)
         {
             float theta = acosf(1.0f - 2.0f * (i + 0.5f) / kMaxSamples);
             float phi = 2.0f * kPi * i / kGoldenRatio;
@@ -70,16 +72,19 @@ namespace Toop {
             };
 
             if (!IsBalded(dir, bald_patches))
-                result.push_back(dir);
+                all_points.push_back(dir);
         }
 
-        if ((int)result.size() < num_strands)
+        if ((int)all_points.size() < num_strands)
             throw std::runtime_error(
                 "[ERROR] FibonacciSphere: not enough points after bald patch filtering. "
                 "Increase kMaxSamples or reduce num_strands.");
 
-        result.resize(num_strands);
-        return result;
+        std::mt19937 rng(42);
+        std::shuffle(all_points.begin(), all_points.end(), rng);
+
+        all_points.resize(num_strands);
+        return all_points;
     }
 
 } // namespace Toop
