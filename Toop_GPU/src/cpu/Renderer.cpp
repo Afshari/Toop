@@ -270,7 +270,6 @@ namespace Toop {
     // --------------------------------------------------------------------------------
     void Renderer::MapInteropBuffer()
     {
-        float* d_ptr = nullptr;
         size_t size = 0;
 
         CheckCudaInterop(
@@ -284,9 +283,6 @@ namespace Toop {
                 (void**)&m_interop_ptr, &size,
                 reinterpret_cast<cudaGraphicsResource*>(m_cuda_vbo_resource)),
             "cudaGraphicsResourceGetMappedPointer");
-
-        // give pointer to HairSimulator - it will pack SoA into this AoS buffer
-        m_interop_ptr = d_ptr;
     }
 
     // --------------------------------------------------------------------------------

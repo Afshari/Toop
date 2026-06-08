@@ -1,5 +1,6 @@
 #pragma once
 #include "Config.h"
+#include "FibonacciSphere.h"
 
 namespace Toop {
 
@@ -32,7 +33,7 @@ namespace Toop {
     private:
         void AllocateBuffers();
         void FreeBuffers();
-        void UploadInitialPositions();
+        void UploadInitialPositions(const std::vector<float3cpu>& root_dirs);
         void UploadRootDirs(const SimConfig& config, const BaldPatchConfig& bald_patches);
         void InitRandStates();
 

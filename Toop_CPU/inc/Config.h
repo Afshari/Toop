@@ -50,7 +50,7 @@ namespace Toop {
         Vec3Config  eye_left_dir = { -0.25f, 0.15f, 1.0f };
         Vec3Config  eye_right_dir = { 0.25f, 0.15f, 1.0f };
         float       eye_threshold = 0.97f;
-        float       top_threshold = 0.95f;
+        float       top_threshold = 1.0f;
     };
 
     struct RenderConfig

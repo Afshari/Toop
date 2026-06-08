@@ -38,7 +38,6 @@ namespace Toop {
         m_num_substeps = config.num_substeps;
 
         AllocateBuffers();
-        UploadInitialPositions();
         UploadRootDirs(config, bald_patches);
         InitRandStates();
 
@@ -75,7 +74,7 @@ namespace Toop {
     }
 
     // --------------------------------------------------------------------------------
-    void HairSimulator::UploadInitialPositions()
+    void HairSimulator::UploadInitialPositions(const std::vector<float3cpu>& root_dirs)
     {
         size_t n = m_total_particles;
         std::vector<float> h_pos_x(n, 0.0f);
@@ -88,13 +87,19 @@ namespace Toop {
         int particles_per_strand = m_num_segments + 1;
         for (int s = 0; s < m_num_strands; s++)
         {
+            // root position on sphere surface
+            float rx = m_sphere_cx + root_dirs[s].x * m_sphere_radius;
+            float ry = m_sphere_cy + root_dirs[s].y * m_sphere_radius;
+            float rz = m_sphere_cz + root_dirs[s].z * m_sphere_radius;
+
             int base = s * particles_per_strand;
+
             for (int p = 0; p < particles_per_strand; p++)
             {
-                h_pos_x[base + p] = 0.0f;
-                h_pos_y[base + p] = m_sphere_cy + m_sphere_radius
-                    + p * m_segment_length;
-                h_pos_z[base + p] = 0.0f;
+                // place particles along outward normal from root
+                h_pos_x[base + p] = rx + root_dirs[s].x * p * m_segment_length;
+                h_pos_y[base + p] = ry + root_dirs[s].y * p * m_segment_length;
+                h_pos_z[base + p] = rz + root_dirs[s].z * p * m_segment_length;
                 h_inv_mass[base + p] = (p == 0) ? 0.0f : 1.0f;
             }
         }
@@ -117,9 +122,13 @@ namespace Toop {
         const SimConfig& config,
         const BaldPatchConfig& bald_patches)
     {
-        auto cpu_dirs = FibonacciSphere::Generate(m_num_strands, bald_patches);
+        auto cpu_dirs = FibonacciSphere::Generate(
+            m_num_strands, bald_patches);
 
-        // convert float3cpu to CUDA float3
+        // upload initial positions BEFORE converting to GPU format
+        UploadInitialPositions(cpu_dirs);
+
+        // convert and upload root dirs to GPU
         std::vector<float3> gpu_dirs(m_num_strands);
         for (int i = 0; i < m_num_strands; i++)
         {
@@ -313,7 +322,12 @@ namespace Toop {
 
     void HairSimulator::PackPositionsForRendering()
     {
-        if (!m_initialized || !m_d_interop_aos) return;
+        if (!m_initialized) return;
+        if (!m_d_interop_aos)
+        {
+            std::cerr << "[WARN] PackPositionsForRendering: interop buffer is null." << std::endl;
+            return;
+        }
 
         launch_pack_positions_aos(
             m_d_pos_x, m_d_pos_y, m_d_pos_z,

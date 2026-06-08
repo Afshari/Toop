@@ -72,6 +72,10 @@ namespace Toop {
         Renderer renderer;
         renderer.Init(config, sim);
 
+        renderer.MapInterop();
+        sim.SetInteropBuffer(renderer.GetInteropPtr());
+        renderer.UnmapInterop();
+
         // key callback
         window.SetKeyCallback([&](int key, int action)
             {
@@ -147,7 +151,7 @@ namespace Toop {
             sim.Step(dt);
 
             renderer.MapInterop();
-            sim.SetInteropBuffer(renderer.GetInteropPtr());
+            // sim.SetInteropBuffer(renderer.GetInteropPtr());
             sim.PackPositionsForRendering();
             renderer.UnmapInterop();
 
