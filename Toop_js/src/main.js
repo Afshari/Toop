@@ -56,7 +56,7 @@ controls.target.set(0, 1.0, 0)
 // ------------------------------------------------------------
 const mouseNDC = new THREE.Vector2(0, 0)
 window.addEventListener('mousemove', (e) => {
-    mouseNDC.x =  (e.clientX / window.innerWidth)  * 2 - 1
+    mouseNDC.x = (e.clientX / window.innerWidth) * 2 - 1
     mouseNDC.y = -(e.clientY / window.innerHeight) * 2 + 1
 
     if (sphere.isDragging) {
@@ -97,6 +97,23 @@ window.addEventListener('keydown', (e) => {
         case '2': setCameraPreset(4.0); break
         case '3': setCameraPreset(6.0); break
         case '4': setCameraPreset(8.0); break
+        case '5': setCameraPreset(12.0); break
+        case '6': setCameraPreset(18.0); break
+        case 'f':
+        case 'F':
+            stats.dom.style.display =
+                stats.dom.style.display === 'none' ? 'block' : 'none'
+            break
+        case 'l':
+        case 'L':
+            ambientLight.intensity = Math.min(3.0, ambientLight.intensity + 0.1)
+            dirLight.intensity = Math.min(4.0, dirLight.intensity + 0.1)
+            break
+        case 'k':
+        case 'K':
+            ambientLight.intensity = Math.max(0.0, ambientLight.intensity - 0.1)
+            dirLight.intensity = Math.max(0.0, dirLight.intensity - 0.1)
+            break
     }
 })
 
@@ -106,7 +123,7 @@ window.addEventListener('keydown', (e) => {
 // ------------------------------------------------------------
 window.addEventListener('touchstart', (e) => {
     const touch = e.touches[0]
-    mouseNDC.x =  (touch.clientX / window.innerWidth)  * 2 - 1
+    mouseNDC.x = (touch.clientX / window.innerWidth) * 2 - 1
     mouseNDC.y = -(touch.clientY / window.innerHeight) * 2 + 1
     dragRaycaster.setFromCamera(mouseNDC, camera)
     const grabbed = sphere.handleDragStart(dragRaycaster)
@@ -116,7 +133,7 @@ window.addEventListener('touchstart', (e) => {
 
 window.addEventListener('touchmove', (e) => {
     const touch = e.touches[0]
-    mouseNDC.x =  (touch.clientX / window.innerWidth)  * 2 - 1
+    mouseNDC.x = (touch.clientX / window.innerWidth) * 2 - 1
     mouseNDC.y = -(touch.clientY / window.innerHeight) * 2 + 1
     if (sphere.isDragging) {
         dragRaycaster.setFromCamera(mouseNDC, camera)
@@ -126,11 +143,14 @@ window.addEventListener('touchmove', (e) => {
 }, { passive: false })
 
 window.addEventListener('touchend', () => {
+    const sphereNDC = sphere.getCenter().clone().project(camera)
+    mouseNDC.set(sphereNDC.x, sphereNDC.y)
+
     if (sphere.isDragging) {
         sphere.handleDragEnd()
         controls.enabled = true
     }
-    mouseNDC.set(0, 0)
+    // mouseNDC.set(0, 0)
 })
 
 // ------------------------------------------------------------
@@ -157,7 +177,7 @@ const sphere = new Sphere(scene)
 // Ground
 // ------------------------------------------------------------
 const groundGeo = new THREE.PlaneGeometry(20, 20)
-const groundMat = new THREE.MeshStandardMaterial({ 
+const groundMat = new THREE.MeshStandardMaterial({
     color: 0x2a2018,
     roughness: 0.8,
 })
@@ -218,7 +238,7 @@ window.addEventListener('resize', () => {
 // Animation loop
 // ------------------------------------------------------------
 function animate() {
-    
+
     requestAnimationFrame(animate)
     stats.begin()
 
@@ -228,7 +248,7 @@ function animate() {
 
     sphere.update(dt)
     sphere.updateIdleTimer(dt)
-    if(!sphere.isDragging) {
+    if (!sphere.isDragging) {
         sphere.updateOrientation(dt)
         sphere.rotateTowardCamera(camera.position)
         sphere.updateHeadTilt(camera, mouseNDC)

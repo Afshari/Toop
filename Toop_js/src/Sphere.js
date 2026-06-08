@@ -261,7 +261,7 @@ export class Sphere {
         if (!this.isTrulyIdle()) {
             this.sphereOrientation.slerp(this.rollingOrientation, 0.15)
             return
-        } else console.log("isTrulyIdle")
+        }
 
         const { max_tilt } = PARAMS
 
