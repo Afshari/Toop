@@ -97,4 +97,12 @@ namespace Toop {
         float noise_scale,
         int   threads_per_block);
 
+    void launch_pack_positions_aos(
+        const float* pos_x,
+        const float* pos_y,
+        const float* pos_z,
+        float* aos_buffer,
+        int          total_particles,
+        int          threads_per_block);
+
 } // namespace Toop

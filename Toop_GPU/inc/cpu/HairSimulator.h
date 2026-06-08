@@ -10,6 +10,7 @@ namespace Toop {
         float integrate_ms = 0.0f;
         float update_roots_ms = 0.0f;
         float constraints_ms = 0.0f;
+        float pack_aos_ms = 0.0f;
         float total_ms = 0.0f;
     };
 
@@ -24,6 +25,9 @@ namespace Toop {
         bool IsInitialized() const { return m_initialized; }
         int  GetTotalParticles() const { return m_total_particles; }
         void SetSphereState(float px, float py, float pz, float qx, float qy, float qz, float qw);
+
+        void SetInteropBuffer(void* cuda_ptr) { m_d_interop_aos = cuda_ptr; }
+        void PackPositionsForRendering();
 
     private:
         void AllocateBuffers();
@@ -67,6 +71,8 @@ namespace Toop {
 
         float* m_d_lambdas = nullptr;
         void* m_d_rand_states = nullptr;
+
+        void* m_d_interop_aos = nullptr;
     };
 
 } // namespace Toop

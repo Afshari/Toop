@@ -19,12 +19,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="inc\Camera.h" />
     <ClInclude Include="inc\CLParser.h" />
     <ClInclude Include="inc\Config.h" />
     <ClInclude Include="inc\FibonacciSphere.h" />
     <ClInclude Include="inc\SpherePhysics.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Camera.cpp" />
     <ClCompile Include="src\CLParser.cpp" />
     <ClCompile Include="src\Config.cpp" />
     <ClCompile Include="src\FibonacciSphere.cpp" />

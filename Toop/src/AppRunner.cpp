@@ -1,10 +1,20 @@
 #include "AppRunner.h"
 #include "cpu/HairSimulator.h"
+#include "cpu/Renderer.h"
 #include "SpherePhysics.h"
 #include <iostream>
 #include <fstream>
 #include <iomanip>
 #include <filesystem>
+
+#ifndef TOOP_HEADLESS
+#include "cpu/Window.h"
+#include "Camera.h"
+#include "cpu/HairSimulator.h"
+#include "SpherePhysics.h"
+#include <chrono>
+#endif
+
 
 namespace Toop {
 
@@ -37,18 +47,124 @@ namespace Toop {
     // --------------------------------------------------------------------------------
     int AppRunner::Run(const Config& config)
     {
-        std::cout << "[INFO] Starting Toop interactive mode." << std::endl;
-        std::cout << "[INFO] Strands: " << config.sim.num_strands << std::endl;
-        std::cout << "[INFO] Segments: " << config.sim.num_segments << std::endl;
-        std::cout << "[INFO] Substeps: " << config.sim.num_substeps << std::endl;
-        std::cout << "[INFO] Window: " << config.render.window_width
-            << "x" << config.render.window_height << std::endl;
+#ifdef TOOP_HEADLESS
+        std::cout << "[WARN] Built headless - redirecting to RunHeadless." << std::endl;
+        return RunHeadless(config);
+#else
+        std::cout << "[INFO] Starting Toop." << std::endl;
 
-        // TODO: initialize OpenGL window, simulation, main loop
+        Window window("Toop", config.render.window_width,
+            config.render.window_height,
+            config.render.vsync);
 
+        Camera camera;
+        camera.SetPreset(2, glm::vec3(
+            config.sim.sphere_center.x,
+            config.sim.sphere_center.y,
+            config.sim.sphere_center.z));
+
+        SpherePhysics sphere;
+        sphere.Init(config.sphere, config.room, config.sim.sphere_radius);
+
+        HairSimulator sim;
+        sim.Init(config.sim, config.bald_patches);
+
+        Renderer renderer;
+        renderer.Init(config, sim);
+
+        // key callback
+        window.SetKeyCallback([&](int key, int action)
+            {
+                if (action == GLFW_PRESS || action == GLFW_REPEAT)
+                {
+                    switch (key)
+                    {
+                    case GLFW_KEY_ESCAPE: glfwSetWindowShouldClose(
+                        glfwGetCurrentContext(), true); break;
+                    case GLFW_KEY_W:     camera.HandleKeyW();    break;
+                    case GLFW_KEY_S:     camera.HandleKeyS();    break;
+                    case GLFW_KEY_A:     camera.HandleKeyA();    break;
+                    case GLFW_KEY_D:     camera.HandleKeyD();    break;
+                    case GLFW_KEY_Q:     camera.HandleKeyQ();    break;
+                    case GLFW_KEY_E:     camera.HandleKeyE();    break;
+                    case GLFW_KEY_1:     camera.SetPreset(1, glm::vec3(
+                        sphere.GetPosX(),
+                        sphere.GetPosY(),
+                        sphere.GetPosZ())); break;
+                    case GLFW_KEY_2:     camera.SetPreset(2, glm::vec3(
+                        sphere.GetPosX(),
+                        sphere.GetPosY(),
+                        sphere.GetPosZ())); break;
+                    case GLFW_KEY_3:     camera.SetPreset(3, glm::vec3(
+                        sphere.GetPosX(),
+                        sphere.GetPosY(),
+                        sphere.GetPosZ())); break;
+                    }
+                }
+            });
+
+        // mouse callback
+        window.SetMouseCallback([&](const MouseState& mouse)
+            {
+                if (mouse.left)
+                    camera.HandleMouseOrbit(mouse.dx, mouse.dy, glm::vec3(
+                        sphere.GetPosX(),
+                        sphere.GetPosY(),
+                        sphere.GetPosZ()));
+                else if (mouse.right)
+                    camera.HandleMouseTranslate(mouse.dx, mouse.dy);
+            });
+
+        // scroll callback
+        window.SetScrollCallback([&](float delta)
+            {
+                camera.HandleWheel(delta);
+            });
+
+        // resize callback
+        window.SetResizeCallback([&](int /*width*/, int /*height*/)
+            {
+                // camera aspect updated via window.GetAspect() each frame
+            });
+
+        // main loop
+        auto prev_time = std::chrono::high_resolution_clock::now();
+
+        while (!window.ShouldClose())
+        {
+            auto now = std::chrono::high_resolution_clock::now();
+            float dt = std::chrono::duration<float>(now - prev_time).count();
+            prev_time = now;
+            dt = std::min(dt, 0.05f); // clamp to avoid spiral of death
+
+            window.BeginFrame();
+
+            sphere.Update(dt);
+            sim.SetSphereState(
+                sphere.GetPosX(), sphere.GetPosY(), sphere.GetPosZ(),
+                sphere.GetQuatX(), sphere.GetQuatY(), sphere.GetQuatZ(),
+                sphere.GetQuatW());
+            sim.Step(dt);
+
+            renderer.MapInterop();
+            sim.SetInteropBuffer(renderer.GetInteropPtr());
+            sim.PackPositionsForRendering();
+            renderer.UnmapInterop();
+
+            renderer.Render(
+                camera.GetViewMatrix(),
+                camera.GetProjectionMatrix(window.GetAspect()),
+                glm::vec3(sphere.GetPosX(), sphere.GetPosY(), sphere.GetPosZ()),
+                config.sim.sphere_radius);
+
+            window.EndFrame();
+        }
+
+        renderer.Shutdown();
+        sim.Shutdown();
         return 0;
+#endif
     }
-
     // --------------------------------------------------------------------------------
     int AppRunner::RunHeadless(const Config& config)
     {

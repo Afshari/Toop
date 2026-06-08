@@ -12,6 +12,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inc\cpu\HairSimulator.h" />
+    <ClInclude Include="inc\cpu\Renderer.h" />
+    <ClInclude Include="inc\cpu\ShaderProgram.h" />
+    <ClInclude Include="inc\cpu\Window.h" />
     <ClInclude Include="inc\gpu\HairSim.cuh" />
     <ClInclude Include="inc\gpu\CudaTimer.cuh" />
   </ItemGroup>
@@ -23,6 +26,11 @@
     <ProjectReference Include="..\Toop_CPU\Toop_CPU.vcxproj">
       <Project>{971a8a27-7cdd-443c-90d3-1ab5a4c48e2f}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\cpu\Renderer.cpp" />
+    <ClCompile Include="src\cpu\ShaderProgram.cpp" />
+    <ClCompile Include="src\cpu\Window.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B4A93E74-F043-9413-94BE-43E9B2826E7C}</ProjectGuid>
@@ -63,6 +71,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir)inc;$(SolutionDir)Toop_CPU\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -71,11 +80,15 @@
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <Include>$(SolutionDir)Toop_CPU\inc;$(ProjectDir)inc;%(Include)</Include>
+      <Include>$(SolutionDir)Toop_CPU\inc;$(ProjectDir)inc;$(VCPKG_ROOT)\installed\x64-windows\include;%(Include)</Include>
     </CudaCompile>
     <CudaLink>
-      <AdditionalDependencies>curand.lib</AdditionalDependencies>
+      <AdditionalDependencies>curand.lib;glfw3.lib;opengl32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(VCPKG_ROOT)\installed\x64-windows\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </CudaLink>
+    <PostBuildEvent>
+      <Command>xcopy /Y /E "$(ProjectDir)shaders\*" "$(OutDir)shaders\"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -85,6 +98,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir)inc;$(SolutionDir)Toop_CPU\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -95,11 +109,15 @@
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <Include>$(SolutionDir)Toop_CPU\inc;$(ProjectDir)inc;%(Include)</Include>
+      <Include>$(SolutionDir)Toop_CPU\inc;$(ProjectDir)inc;$(VCPKG_ROOT)\installed\x64-windows\include;%(Include)</Include>
     </CudaCompile>
     <CudaLink>
-      <AdditionalDependencies>curand.lib</AdditionalDependencies>
+      <AdditionalDependencies>curand.lib;glfw3.lib;opengl32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(VCPKG_ROOT)\installed\x64-windows\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </CudaLink>
+    <PostBuildEvent>
+      <Command>xcopy /Y /E "$(ProjectDir)shaders\*" "$(OutDir)shaders\"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

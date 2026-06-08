@@ -311,4 +311,15 @@ namespace Toop {
         m_d_lambdas = nullptr;
     }
 
+    void HairSimulator::PackPositionsForRendering()
+    {
+        if (!m_initialized || !m_d_interop_aos) return;
+
+        launch_pack_positions_aos(
+            m_d_pos_x, m_d_pos_y, m_d_pos_z,
+            static_cast<float*>(m_d_interop_aos),
+            m_total_particles,
+            m_threads_per_block);
+    }
+
 } // namespace Toop

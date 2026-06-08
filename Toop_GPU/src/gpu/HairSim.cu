@@ -240,6 +240,21 @@ namespace Toop {
         prev_pos_z[idx] += delta_z + nz;
     }
 
+    __global__ void k_pack_positions_aos(
+        const float* __restrict__ pos_x,
+        const float* __restrict__ pos_y,
+        const float* __restrict__ pos_z,
+        float* __restrict__ aos_buffer,
+        int total_particles)
+    {
+        int idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx >= total_particles) return;
+
+        aos_buffer[idx * 3 + 0] = pos_x[idx];
+        aos_buffer[idx * 3 + 1] = pos_y[idx];
+        aos_buffer[idx * 3 + 2] = pos_z[idx];
+    }
+
     // --------------------------------------------------------------------------------
     // HOST LAUNCHERS
     // --------------------------------------------------------------------------------
@@ -387,6 +402,19 @@ namespace Toop {
             total_particles,
             delta_x, delta_y, delta_z,
             noise_scale);
+    }
+
+    void launch_pack_positions_aos(
+        const float* pos_x,
+        const float* pos_y,
+        const float* pos_z,
+        float* aos_buffer,
+        int          total_particles,
+        int          threads_per_block)
+    {
+        int blocks = (total_particles + threads_per_block - 1) / threads_per_block;
+        k_pack_positions_aos << <blocks, threads_per_block >> > (
+            pos_x, pos_y, pos_z, aos_buffer, total_particles);
     }
 
 } // namespace Toop

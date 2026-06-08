@@ -2,6 +2,10 @@
 #include "CLParser.h"
 #include <iostream>
 
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+
 int main(int argc, char* argv[])
 {
     auto parser = Toop::CLParser::Parse(argc, argv);

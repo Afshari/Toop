@@ -103,13 +103,13 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Toop_CPU\inc;$(SolutionDir)Toop_GPU\inc;$(ProjectDir)inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Toop_CPU\inc;$(SolutionDir)Toop_GPU\inc;$(ProjectDir)inc;$(VCPKG_ROOT)\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>cudart_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(CUDA_PATH)\lib\x64;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>cudart_static.lib;glfw3dll.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CUDA_PATH)\lib\x64;$(VCPKG_ROOT)\installed\x64-windows\lib</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /Y "$(SolutionDir)config.json" "$(OutDir)"</Command>
@@ -124,13 +124,13 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Toop_CPU\inc;$(SolutionDir)Toop_GPU\inc;$(ProjectDir)inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Toop_CPU\inc;$(SolutionDir)Toop_GPU\inc;$(ProjectDir)inc;$(VCPKG_ROOT)\installed\x64-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>cudart_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(CUDA_PATH)\lib\x64;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>cudart_static.lib;glfw3dll.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CUDA_PATH)\lib\x64;$(VCPKG_ROOT)\installed\x64-windows\lib</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /Y "$(SolutionDir)config.json" "$(OutDir)"</Command>

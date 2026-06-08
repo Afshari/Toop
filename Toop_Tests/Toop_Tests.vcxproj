@@ -57,7 +57,7 @@
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>$(SolutionDir)Toop_CPU\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Toop_CPU\inc;$(SolutionDir)Toop_GPU\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -89,7 +89,7 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>$(SolutionDir)Toop_CPU\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Toop_CPU\inc;$(SolutionDir)Toop_GPU\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
@@ -104,6 +104,7 @@
     <ClInclude Include="TestHelpers.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CameraTests.cpp" />
     <ClCompile Include="CLParserTests.cpp" />
     <ClCompile Include="ConfigTests.cpp" />
     <ClCompile Include="FibonacciSphereTests.cpp" />
@@ -113,6 +114,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="ShaderProgramTests.cpp" />
     <ClCompile Include="SpherePhysicsTests.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -121,6 +123,9 @@
   <ItemGroup>
     <ProjectReference Include="..\Toop_CPU\Toop_CPU.vcxproj">
       <Project>{971a8a27-7cdd-443c-90d3-1ab5a4c48e2f}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Toop_GPU\Toop_GPU.vcxproj">
+      <Project>{b4a93e74-f043-9413-94be-43e9b2826e7c}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
