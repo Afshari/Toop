@@ -33,8 +33,13 @@ void main() {
     // non-root - integrate
     vec3 v       = vel.xyz;
     float phase = gl_FragCoord.x * 0.11 + gl_FragCoord.y * 0.17;
-    float noise = sin(phase + uTime * 2.1) * cos(phase * 0.53 + uTime * 1.3);
-    vec3  wind  = uWind * (1.0 + 9.0 * noise);
+    
+    float noise1 = sin(phase + uTime * 2.1) * cos(phase * 0.53 + uTime * 1.3);
+    float noise2 = sin(phase * 1.7 + uTime * 3.7) * 0.5;
+    float noise3 = cos(phase * 2.9 + uTime * 0.7) * 0.3;
+    float noise  = (noise1 + noise2 + noise3) / 1.8;
+    vec3  wind   = uWind * (0.4 + 12.0 * noise);
+
     v = (v + (vec3(0.0, uGravity, 0.0) + wind) * uDt) * uDamping;
     vec3 newPos  = pos.xyz + v * uDt;
 
