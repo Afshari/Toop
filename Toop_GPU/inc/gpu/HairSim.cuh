@@ -31,18 +31,23 @@ namespace Toop {
         int    threads_per_block);
 
     void launch_integrate(
-        float* pos_x,
-        float* pos_y,
+        float* pos_x, 
+        float* pos_y, 
         float* pos_z,
-        float* prev_pos_x,
-        float* prev_pos_y,
+        float* prev_pos_x, 
+        float* prev_pos_y, 
         float* prev_pos_z,
         const float* inv_mass,
         int   total_particles,
-        float gravity_y,
-        float damping,
+        float gravity_y, 
+        float damping, 
         float dt,
+        float wind_x, 
+        float wind_y, 
+        float wind_z,
+        float time,
         int   threads_per_block);
+
 
     void launch_update_roots(
         float* pos_x,
@@ -82,19 +87,20 @@ namespace Toop {
         int          threads_per_block);
 
     void launch_translate_with_perturbation(
-        float* pos_x,
-        float* pos_y,
+        float* pos_x, 
+        float* pos_y, 
         float* pos_z,
-        float* prev_pos_x,
-        float* prev_pos_y,
+        float* prev_pos_x, 
+        float* prev_pos_y, 
         float* prev_pos_z,
         const float* inv_mass,
         curandState* states,
         int   total_particles,
-        float delta_x,
-        float delta_y,
+        int   particles_per_strand,
+        float delta_x, 
+        float delta_y, 
         float delta_z,
-        float noise_scale,
+        float drag_speed,
         int   threads_per_block);
 
     void launch_pack_positions_aos(
@@ -104,5 +110,21 @@ namespace Toop {
         float* aos_buffer,
         int          total_particles,
         int          threads_per_block);
+
+    void launch_apply_drag_velocity(
+        float* pos_x,
+        float* pos_y,
+        float* pos_z,
+        const float* prev_pos_x,
+        const float* prev_pos_y,
+        const float* prev_pos_z,
+        const float* inv_mass,
+        int   total_particles,
+        float vel_x,
+        float vel_y,
+        float vel_z,
+        float scale,
+        int   threads_per_block);
+
 
 } // namespace Toop

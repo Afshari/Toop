@@ -97,6 +97,16 @@ namespace Toop {
             m_vel.x *= m_damping;
             m_vel.y *= m_damping;
             m_vel.z *= m_damping;
+
+            const float max_speed = 10.0f;
+            float speed = Length(m_vel);
+            if (speed > max_speed)
+            {
+                m_vel.x = m_vel.x / speed * max_speed;
+                m_vel.y = m_vel.y / speed * max_speed;
+                m_vel.z = m_vel.z / speed * max_speed;
+            }
+
         }
 
         // compute delta for hair perturbation

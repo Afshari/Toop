@@ -59,7 +59,7 @@ namespace Toop {
     {
         auto config = Config::Default();
         EXPECT_FLOAT_EQ(config.bald_patches.eye_threshold, 0.97f);
-        EXPECT_FLOAT_EQ(config.bald_patches.top_threshold, 0.95f);
+        EXPECT_FLOAT_EQ(config.bald_patches.top_threshold, 1.0f);
         EXPECT_FLOAT_EQ(config.bald_patches.eye_left_dir.x, -0.25f);
         EXPECT_FLOAT_EQ(config.bald_patches.eye_left_dir.y, 0.15f);
         EXPECT_FLOAT_EQ(config.bald_patches.eye_left_dir.z, 1.0f);

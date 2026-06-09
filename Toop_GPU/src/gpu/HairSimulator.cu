@@ -68,7 +68,7 @@ namespace Toop {
             m_total_particles * sizeof(curandState)), "cudaMalloc rand_states");
 
         std::cout << "[INFO] GPU buffers allocated: "
-            << (bytes * 7 + m_num_strands * m_num_segments * sizeof(float))
+            << (bytes * 10 + m_num_strands * m_num_segments * sizeof(float))
             / (1024 * 1024)
             << " MB" << std::endl;
     }
@@ -81,6 +81,7 @@ namespace Toop {
         std::vector<float> h_pos_y(n, 0.0f);
         std::vector<float> h_pos_z(n, 0.0f);
         std::vector<float> h_inv_mass(n, 0.0f);
+        std::vector<float> h_vel(n, 0.0f);
         std::vector<float> h_rest_lengths(m_num_strands * m_num_segments, m_segment_length);
 
         // placeholder - flat positions, proper Fibonacci init comes later
@@ -160,7 +161,8 @@ namespace Toop {
     }
 
     // --------------------------------------------------------------------------------
-    StepTimings HairSimulator::Step(float dt)
+    StepTimings HairSimulator::Step(float dt, bool is_dragging,
+        float delta_x, float delta_y, float delta_z)
     {
         StepTimings timings;
         if (!m_initialized) return timings;
@@ -169,10 +171,24 @@ namespace Toop {
 
         CudaTimer timer_roots;
         CudaTimer timer_integrate;
+        CudaTimer timer_constraints;
         CudaTimer timer_sphere;
         CudaTimer timer_ground;
-        CudaTimer timer_constraints;
         CudaTimer timer_total;
+
+        if (is_dragging)
+        {
+            launch_translate_with_perturbation(
+                m_d_pos_x, m_d_pos_y, m_d_pos_z,
+                m_d_prev_pos_x, m_d_prev_pos_y, m_d_prev_pos_z,
+                m_d_inv_mass,
+                static_cast<curandState*>(m_d_rand_states),
+                m_total_particles,
+                m_num_segments + 1,
+                delta_x, delta_y, delta_z,
+                0.0f,
+                m_threads_per_block);
+        }
 
         timer_total.Start();
 
@@ -183,8 +199,7 @@ namespace Toop {
                 m_d_pos_x, m_d_pos_y, m_d_pos_z,
                 m_d_prev_pos_x, m_d_prev_pos_y, m_d_prev_pos_z,
                 static_cast<float3*>(m_d_root_dirs),
-                m_num_strands,
-                m_num_segments + 1,
+                m_num_strands, m_num_segments + 1,
                 m_sphere_cx, m_sphere_cy, m_sphere_cz,
                 m_sphere_radius,
                 m_sphere_qx, m_sphere_qy, m_sphere_qz, m_sphere_qw,
@@ -198,14 +213,13 @@ namespace Toop {
                 m_d_prev_pos_x, m_d_prev_pos_y, m_d_prev_pos_z,
                 m_d_inv_mass,
                 m_total_particles,
-                m_gravity,
-                m_damping,
-                sub_dt,
+                m_gravity, m_damping, sub_dt,
+                m_wind_x, m_wind_y, m_wind_z,
+                m_time,
                 m_threads_per_block);
             timer_integrate.Stop();
             timings.integrate_ms += timer_integrate.ElapsedMs();
 
-            // reset lambdas at start of each substep
             CheckCuda(cudaMemset(m_d_lambdas, 0,
                 m_num_strands * m_num_segments * sizeof(float)),
                 "cudaMemset lambdas");
@@ -213,14 +227,9 @@ namespace Toop {
             timer_constraints.Start();
             launch_solve_constraints_xpbd(
                 m_d_pos_x, m_d_pos_y, m_d_pos_z,
-                m_d_inv_mass,
-                m_d_rest_lengths,
-                m_d_lambdas,
-                m_num_strands,
-                m_num_segments,
-                m_num_segments + 1,
-                m_compliance,
-                sub_dt,
+                m_d_inv_mass, m_d_rest_lengths, m_d_lambdas,
+                m_num_strands, m_num_segments, m_num_segments + 1,
+                m_compliance, sub_dt,
                 m_threads_per_block);
             timer_constraints.Stop();
             timings.constraints_ms += timer_constraints.ElapsedMs();
@@ -228,25 +237,21 @@ namespace Toop {
             timer_sphere.Start();
             launch_solve_sphere_collision(
                 m_d_pos_x, m_d_pos_y, m_d_pos_z,
-                m_d_inv_mass,
-                m_total_particles,
+                m_d_inv_mass, m_total_particles,
                 m_sphere_cx, m_sphere_cy, m_sphere_cz,
-                m_sphere_radius,
-                m_compliance,
-                sub_dt,
+                m_sphere_radius, m_compliance, sub_dt,
                 m_threads_per_block);
             timer_sphere.Stop();
             timings.sphere_collision_ms += timer_sphere.ElapsedMs();
 
             timer_ground.Start();
             launch_solve_ground_collision(
-                m_d_pos_y,
-                m_d_inv_mass,
-                m_total_particles,
-                m_ground_y,
+                m_d_pos_y, m_d_inv_mass,
+                m_total_particles, m_ground_y,
                 m_threads_per_block);
             timer_ground.Stop();
             timings.ground_collision_ms += timer_ground.ElapsedMs();
+
         }
 
         timer_total.Stop();
@@ -257,18 +262,32 @@ namespace Toop {
     // --------------------------------------------------------------------------------
     void HairSimulator::TranslateWithPerturbation(
         float delta_x, float delta_y, float delta_z,
-        float noise_scale)
+        float drag_speed)
     {
         if (!m_initialized) return;
-
         launch_translate_with_perturbation(
             m_d_pos_x, m_d_pos_y, m_d_pos_z,
             m_d_prev_pos_x, m_d_prev_pos_y, m_d_prev_pos_z,
             m_d_inv_mass,
             static_cast<curandState*>(m_d_rand_states),
             m_total_particles,
+            m_num_segments + 1,
             delta_x, delta_y, delta_z,
-            noise_scale,
+            drag_speed,
+            m_threads_per_block);
+    }
+
+    void HairSimulator::ApplyDragVelocity(
+        float vel_x, float vel_y, float vel_z,
+        float scale)
+    {
+        if (!m_initialized) return;
+        launch_apply_drag_velocity(
+            m_d_pos_x, m_d_pos_y, m_d_pos_z,
+            m_d_prev_pos_x, m_d_prev_pos_y, m_d_prev_pos_z,
+            m_d_inv_mass,
+            m_total_particles,
+            vel_x, vel_y, vel_z, scale,
             m_threads_per_block);
     }
 

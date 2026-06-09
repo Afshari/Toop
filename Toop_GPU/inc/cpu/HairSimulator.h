@@ -12,6 +12,7 @@ namespace Toop {
         float update_roots_ms = 0.0f;
         float constraints_ms = 0.0f;
         float pack_aos_ms = 0.0f;
+        float update_velocity_ms = 0.0f;
         float total_ms = 0.0f;
     };
 
@@ -19,8 +20,11 @@ namespace Toop {
     {
     public:
         void Init(const SimConfig& sim, const BaldPatchConfig& bald_patches);
-        StepTimings Step(float dt);
-        void TranslateWithPerturbation(float delta_x, float delta_y, float delta_z, float noise_scale);
+        StepTimings Step(float dt, bool is_dragging = false,
+            float delta_x = 0.0f,
+            float delta_y = 0.0f,
+            float delta_z = 0.0f);
+        void TranslateWithPerturbation(float delta_x, float delta_y, float delta_z, float drag_speed);
         void Shutdown();
 
         bool IsInitialized() const { return m_initialized; }
@@ -29,6 +33,16 @@ namespace Toop {
 
         void SetInteropBuffer(void* cuda_ptr) { m_d_interop_aos = cuda_ptr; }
         void PackPositionsForRendering();
+
+        void SetWind(float wx, float wy, float wz) {
+            m_wind_x = wx;
+            m_wind_y = wy;
+            m_wind_z = wz;
+        }
+        void ApplyDragVelocity(
+            float vel_x, float vel_y, float vel_z,
+            float scale);
+        void AddTime(float dt) { m_time += dt; }
 
     private:
         void AllocateBuffers();
@@ -74,6 +88,11 @@ namespace Toop {
         void* m_d_rand_states = nullptr;
 
         void* m_d_interop_aos = nullptr;
+
+        float m_wind_x = 0.0f;
+        float m_wind_y = 0.0f;
+        float m_wind_z = 0.0f;
+        float m_time = 0.0f;
     };
 
 } // namespace Toop
