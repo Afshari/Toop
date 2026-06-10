@@ -3,13 +3,15 @@
 Real-time interactive fur simulation in the browser. A furry sphere with eyes and personality — drag it, throw it, watch it react. Built with Three.js and GPGPU physics.
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-toopjs.vercel.app-black?style=for-the-badge)](https://toopjs.vercel.app)
-[![YouTube](https://img.shields.io/badge/YouTube-Watch%20Demo-red?style=for-the-badge&logo=youtube)](YOUR_YOUTUBE_URL_HERE)
+[![YouTube](https://img.shields.io/badge/YouTube-Watch%20Demo-red?style=for-the-badge&logo=youtube)](https://youtube.com/shorts/UIwsClY8uwk)
+
+[![Toop Demo](../docs/assets/Toop.js.gif)](https://toopjs.vercel.app)
 
 ---
 
 ## Key Features
 
-- ~15,000 fur strands simulated in real-time using **Extended Position-Based Dynamics (PBD/xPBD)**
+- ~15,000 fur strands simulated in real-time using **Position-Based Dynamics (PBD/xPBD)**
 - **GPGPU-based physics** — each strand computed in parallel on the GPU
 - Fully interactive — drag and throw the sphere, eyes follow the mouse, character tilts toward you when idle
 - Runs entirely in the **browser**, no installation needed
@@ -48,7 +50,7 @@ index.html
 src/
   main.js                  - entry point
   HairSimulation.js        - GPGPU simulation pipeline
-  Sphere.js                - sphere mesh and interaction
+  Sphere.js                - sphere physics, character behavior and interaction
   StrandGeometry.js        - strand geometry setup
   config.js                - simulation parameters
   shaders/
