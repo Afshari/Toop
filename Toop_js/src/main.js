@@ -6,6 +6,9 @@ import { HairSimulation } from './HairSimulation.js'
 import { Sphere } from './Sphere.js'
 import Stats from 'stats.js'
 import GUI from 'lil-gui'
+import { inject } from '@vercel/analytics';
+
+inject();
 
 const clock = new THREE.Clock()
 
