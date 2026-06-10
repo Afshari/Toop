@@ -3,7 +3,7 @@
 **Toop** means *ball* in Farsi. It is a real-time interactive fur simulation — a furry sphere with eyes, personality, and physics. Drag it, throw it, watch it react.
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-toopjs.vercel.app-black?style=for-the-badge)](https://toopjs.vercel.app)
-[![YouTube](https://img.shields.io/badge/YouTube-Watch%20Demo-red?style=for-the-badge&logo=youtube)](https://youtube.com/shorts/UIwsClY8uwk)
+[![YouTube](https://img.shields.io/badge/YouTube-Watch%20Demo-red?style=for-the-badge&logo=youtube)](https://www.youtube.com/shorts/qccjEpDzxB0)
 
 ---
 

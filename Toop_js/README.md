@@ -3,7 +3,7 @@
 Real-time interactive fur simulation in the browser. A furry sphere with eyes and personality — drag it, throw it, watch it react. Built with Three.js and GPGPU physics.
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-toopjs.vercel.app-black?style=for-the-badge)](https://toopjs.vercel.app)
-[![YouTube](https://img.shields.io/badge/YouTube-Watch%20Demo-red?style=for-the-badge&logo=youtube)](https://youtube.com/shorts/UIwsClY8uwk)
+[![YouTube](https://img.shields.io/badge/YouTube-Watch%20Demo-red?style=for-the-badge&logo=youtube)](https://www.youtube.com/shorts/qccjEpDzxB0)
 
 [![Toop Demo](../docs/assets/Toop.js.gif)](https://toopjs.vercel.app)
 
