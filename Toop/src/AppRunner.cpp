@@ -3,6 +3,7 @@
 #include "cpu/Renderer.h"
 #include "SpherePhysics.h"
 #include "RayUtils.h"
+#include "InputHandler.h"
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -58,13 +59,11 @@ namespace Toop {
 #else
         std::cout << "[INFO] Starting Toop." << std::endl;
 
-        Window window("Toop", config.render.window_width,
+        // --- systems ---
+        Window window("Toop",
+            config.render.window_width,
             config.render.window_height,
             config.render.vsync);
-
-        bool is_dragging = false;
-        bool prev_left = false;
-        glm::vec3 drag_plane_center;
 
         Camera camera;
         camera.SetPreset(2, glm::vec3(
@@ -80,12 +79,18 @@ namespace Toop {
 
         Renderer renderer;
         renderer.Init(config, sim);
+        renderer.MapInterop();
+        sim.SetInteropBuffer(renderer.GetInteropPtr());
+        renderer.UnmapInterop();
+
+        InputHandler input;
+        input.Init(&window, &camera, &sphere, &config);
+        input.RegisterCallbacks();
 
 #ifdef TOOP_DEBUG
-        DebugUI debug_ui;
-        debug_ui.Init(window.GetGLFWWindow());
-
+        DebugUI      debug_ui;
         DebugUIState debug_state;
+        debug_ui.Init(window.GetGLFWWindow());
         debug_state.compliance = config.sim.compliance;
         debug_state.damping = config.sim.damping;
         debug_state.wind_strength = config.sim.wind_strength;
@@ -94,165 +99,27 @@ namespace Toop {
         debug_state.num_substeps = config.sim.num_substeps;
 #endif
 
-        renderer.MapInterop();
-        sim.SetInteropBuffer(renderer.GetInteropPtr());
-        renderer.UnmapInterop();
-
-        // key callback
-        window.SetKeyCallback([&](int key, int action)
-            {
-                if (action == GLFW_PRESS || action == GLFW_REPEAT)
-                {
-                    switch (key)
-                    {
-                    case GLFW_KEY_ESCAPE: glfwSetWindowShouldClose(
-                        glfwGetCurrentContext(), true); break;
-                    case GLFW_KEY_W:     camera.HandleKeyW();    break;
-                    case GLFW_KEY_S:     camera.HandleKeyS();    break;
-                    case GLFW_KEY_A:     camera.HandleKeyA();    break;
-                    case GLFW_KEY_D:     camera.HandleKeyD();    break;
-                    case GLFW_KEY_Q:     camera.HandleKeyQ();    break;
-                    case GLFW_KEY_E:     camera.HandleKeyE();    break;
-                    case GLFW_KEY_1:     camera.SetPreset(1, glm::vec3(
-                        sphere.GetPosX(),
-                        sphere.GetPosY(),
-                        sphere.GetPosZ())); break;
-                    case GLFW_KEY_2:     camera.SetPreset(2, glm::vec3(
-                        sphere.GetPosX(),
-                        sphere.GetPosY(),
-                        sphere.GetPosZ())); break;
-                    case GLFW_KEY_3:     camera.SetPreset(3, glm::vec3(
-                        sphere.GetPosX(),
-                        sphere.GetPosY(),
-                        sphere.GetPosZ())); break;
-                    }
-                }
-
-                // drag start on mouse button press
-                if (key == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
-                {
-                    const auto& mouse = window.GetMouseState();
-                    Ray ray = RayUtils::ScreenToRay(
-                        mouse.x, mouse.y,
-                        window.GetWidth(), window.GetHeight(),
-                        camera.GetViewMatrix(),
-                        camera.GetProjectionMatrix(window.GetAspect()));
-
-                    if (RayUtils::RaySphereIntersect(ray,
-                        glm::vec3(sphere.GetPosX(),
-                            sphere.GetPosY(),
-                            sphere.GetPosZ()),
-                        config.sim.sphere_radius))
-                    {
-                        is_dragging = true;
-                        sphere.StartDrag(
-                            sphere.GetPosX(),
-                            sphere.GetPosY(),
-                            sphere.GetPosZ());
-                    }
-                }
-
-                if (key == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
-                {
-                    if (is_dragging)
-                    {
-                        is_dragging = false;
-                        sphere.EndDrag();
-                    }
-                }
-            });
-
-        // mouse callback
-        window.SetMouseCallback([&](const MouseState& mouse)
-            {
-                Ray ray = RayUtils::ScreenToRay(
-                    mouse.x, mouse.y,
-                    window.GetWidth(), window.GetHeight(),
-                    camera.GetViewMatrix(),
-                    camera.GetProjectionMatrix(window.GetAspect()));
-
-                // detect press - left just became true
-                bool just_pressed = mouse.left && !prev_left;
-                bool just_released = !mouse.left && prev_left;
-                prev_left = mouse.left;
-
-                if (just_pressed)
-                {
-                    // only start drag on fresh click
-                    if (RayUtils::RaySphereIntersect(ray,
-                        glm::vec3(sphere.GetPosX(),
-                            sphere.GetPosY(),
-                            sphere.GetPosZ()),
-                        config.sim.sphere_radius)) {
-
-                        drag_plane_center = glm::vec3(
-                            sphere.GetPosX(),
-                            sphere.GetPosY(),
-                            sphere.GetPosZ());
-
-                        is_dragging = true;
-                        sphere.StartDrag(
-                            sphere.GetPosX(),
-                            sphere.GetPosY(),
-                            sphere.GetPosZ());
-                    }
-                }
-
-                if (just_released && is_dragging)
-                {
-                    is_dragging = false;
-                    sphere.EndDrag();
-                }
-
-                if (mouse.left && !is_dragging)
-                    camera.HandleMouseOrbit(mouse.dx, mouse.dy,
-                        glm::vec3(sphere.GetPosX(),
-                            sphere.GetPosY(),
-                            sphere.GetPosZ()));
-
-                if (mouse.left && is_dragging)
-                {
-                    glm::vec3 hit;
-                    if (RayUtils::RayCameraPlaneIntersect(ray,
-                        drag_plane_center,
-                        camera.GetForward(), hit)) {
-
-                        drag_plane_center = hit;
-                        sphere.UpdateDrag(hit.x, hit.y, hit.z);
-                    }
-                }
-
-                if (mouse.right)
-                    camera.HandleMouseTranslate(mouse.dx, mouse.dy);
-            });
-
-        // scroll callback
-        window.SetScrollCallback([&](float delta)
-            {
-                camera.HandleWheel(delta);
-            });
-
-        // resize callback
-        window.SetResizeCallback([&](int /*width*/, int /*height*/)
-            {
-                // camera aspect updated via window.GetAspect() each frame
-            });
-
-        // main loop
-        auto prev_time = std::chrono::high_resolution_clock::now();
+        // --- main loop ---
+        auto  prev_time = std::chrono::high_resolution_clock::now();
         float sim_time = 0.0f;
 
         while (!window.ShouldClose())
         {
-            auto now = std::chrono::high_resolution_clock::now();
+            // delta time
+            auto  now = std::chrono::high_resolution_clock::now();
             float dt = std::chrono::duration<float>(now - prev_time).count();
             prev_time = now;
-            dt = std::min(dt, 0.033f); // clamp to avoid spiral of death
+            dt = std::min(dt, 0.033f);
+
+            // matrices
+            glm::mat4 view = camera.GetViewMatrix();
+            glm::mat4 proj = camera.GetProjectionMatrix(window.GetAspect());
+
+            // update mouse world position
+            input.UpdateMouseWorld(view, proj);
 
 #ifdef TOOP_DEBUG
             debug_ui.BeginFrame();
-
-            // update read-only state
             debug_state.fps = 1.0f / dt;
             debug_state.frame_ms = dt * 1000.0f;
             debug_state.sphere_speed = sqrtf(
@@ -261,74 +128,62 @@ namespace Toop {
                 sphere.GetDeltaZ() * sphere.GetDeltaZ()) / dt;
 #endif
 
-            glm::vec3 mouse_world = glm::vec3(0.0f); // fallback
-
-            Ray mouse_ray = RayUtils::ScreenToRay(
-                window.GetMouseState().x,
-                window.GetMouseState().y,
-                window.GetWidth(), window.GetHeight(),
-                camera.GetViewMatrix(),
-                camera.GetProjectionMatrix(window.GetAspect()));
-
-            glm::vec3 sphere_center(
-                sphere.GetPosX(),
-                sphere.GetPosY(),
-                sphere.GetPosZ());
-
-            RayUtils::RayCameraPlaneIntersect(
-                mouse_ray, sphere_center,
-                camera.GetForward(), mouse_world);
-
             window.BeginFrame();
 
+            // --- update ---
             sphere.Update(dt);
             sphere.UpdateHeadTilt(
-                mouse_world.x, mouse_world.y, mouse_world.z,
+                input.GetMouseWorld().x,
+                input.GetMouseWorld().y,
+                input.GetMouseWorld().z,
                 camera.GetRight().x, camera.GetRight().y, camera.GetRight().z,
                 camera.GetUp().x, camera.GetUp().y, camera.GetUp().z);
+
             sim.SetSphereState(
                 sphere.GetPosX(), sphere.GetPosY(), sphere.GetPosZ(),
                 sphere.GetQuatX(), sphere.GetQuatY(), sphere.GetQuatZ(),
                 sphere.GetQuatW());
+
             sim_time += dt;
-
-#ifdef TOOP_DEBUG
-            sim.SetWind(
-                debug_state.wind_strength* sinf(sim_time* debug_state.wind_frequency),
-                0.0f,
-                debug_state.wind_strength* cosf(sim_time* debug_state.wind_frequency));
-#else
-            sim.SetWind(
-                config.sim.wind_strength* sinf(sim_time* config.sim.wind_frequency),
-                0.0f,
-                config.sim.wind_strength* cosf(sim_time* config.sim.wind_frequency));
-#endif
-
-            sim.AddTime(dt);
 
 #ifdef TOOP_DEBUG
             if (!debug_state.freeze_sim)
             {
-#endif
-                sim.Step(dt, is_dragging,
-                    sphere.GetDeltaX(), sphere.GetDeltaY(), sphere.GetDeltaZ());
-#ifdef TOOP_DEBUG
+                sim.SetWind(
+                    debug_state.wind_strength * sinf(sim_time * debug_state.wind_frequency),
+                    0.0f,
+                    debug_state.wind_strength * cosf(sim_time * debug_state.wind_frequency));
+                sim.SetNumSubsteps(debug_state.num_substeps);
+                sim.SetCompliance(debug_state.compliance);
+                sim.SetDamping(debug_state.damping);
+                sim.SetGravity(debug_state.gravity);
+                sim.AddTime(dt);
+                sim.Step(dt, input.IsDragging(),
+                    sphere.GetDeltaX(),
+                    sphere.GetDeltaY(),
+                    sphere.GetDeltaZ());
             }
-            sim.SetNumSubsteps(debug_state.num_substeps);
-            sim.SetCompliance(debug_state.compliance);
-            sim.SetDamping(debug_state.damping);
-            sim.SetGravity(debug_state.gravity);
+#else
+            sim.SetWind(
+                config.sim.wind_strength * sinf(sim_time * config.sim.wind_frequency),
+                0.0f,
+                config.sim.wind_strength * cosf(sim_time * config.sim.wind_frequency));
+            sim.AddTime(dt);
+            sim.Step(dt, input.IsDragging(),
+                sphere.GetDeltaX(),
+                sphere.GetDeltaY(),
+                sphere.GetDeltaZ());
 #endif
 
+            // --- render ---
             renderer.MapInterop();
             sim.SetInteropBuffer(renderer.GetInteropPtr());
             sim.PackPositionsForRendering();
             renderer.UnmapInterop();
 
             renderer.Render(
-                camera.GetViewMatrix(),
-                camera.GetProjectionMatrix(window.GetAspect()),
-                sphere_center,
+                view, proj,
+                glm::vec3(sphere.GetPosX(), sphere.GetPosY(), sphere.GetPosZ()),
                 glm::quat(
                     sphere.GetVisualQuatW(),
                     sphere.GetVisualQuatX(),
@@ -336,7 +191,7 @@ namespace Toop {
                     sphere.GetVisualQuatZ()),
                 config.sim.sphere_radius,
                 config.bald_patches,
-                mouse_world);
+                input.GetMouseWorld());
 
 #ifdef TOOP_DEBUG
             debug_ui.Render(debug_state);
@@ -349,6 +204,7 @@ namespace Toop {
 #ifdef TOOP_DEBUG
         debug_ui.Shutdown();
 #endif
+
         renderer.Shutdown();
         sim.Shutdown();
         return 0;

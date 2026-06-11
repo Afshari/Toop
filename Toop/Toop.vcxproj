@@ -148,10 +148,12 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="src\AppRunner.cpp" />
     <ClCompile Include="src\DebugUI.cpp" />
+    <ClCompile Include="src\InputHandler.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inc\AppRunner.h" />
     <ClInclude Include="inc\DebugUI.h" />
+    <ClInclude Include="inc\InputHandler.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
