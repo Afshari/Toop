@@ -14,6 +14,7 @@
 #include "cpu/HairSimulator.h"
 #include "SpherePhysics.h"
 #include <chrono>
+#include <glm/gtc/quaternion.hpp>
 #endif
 
 
@@ -232,9 +233,31 @@ namespace Toop {
             prev_time = now;
             dt = std::min(dt, 0.033f); // clamp to avoid spiral of death
 
+            glm::vec3 mouse_world = glm::vec3(0.0f); // fallback
+
+            Ray mouse_ray = RayUtils::ScreenToRay(
+                window.GetMouseState().x,
+                window.GetMouseState().y,
+                window.GetWidth(), window.GetHeight(),
+                camera.GetViewMatrix(),
+                camera.GetProjectionMatrix(window.GetAspect()));
+
+            glm::vec3 sphere_center(
+                sphere.GetPosX(),
+                sphere.GetPosY(),
+                sphere.GetPosZ());
+
+            RayUtils::RayCameraPlaneIntersect(
+                mouse_ray, sphere_center,
+                camera.GetForward(), mouse_world);
+
             window.BeginFrame();
 
             sphere.Update(dt);
+            sphere.UpdateHeadTilt(
+                mouse_world.x, mouse_world.y, mouse_world.z,
+                camera.GetRight().x, camera.GetRight().y, camera.GetRight().z,
+                camera.GetUp().x, camera.GetUp().y, camera.GetUp().z);
             sim.SetSphereState(
                 sphere.GetPosX(), sphere.GetPosY(), sphere.GetPosZ(),
                 sphere.GetQuatX(), sphere.GetQuatY(), sphere.GetQuatZ(),
@@ -249,15 +272,22 @@ namespace Toop {
                 sphere.GetDeltaX(), sphere.GetDeltaY(), sphere.GetDeltaZ());
 
             renderer.MapInterop();
-            // sim.SetInteropBuffer(renderer.GetInteropPtr());
+            sim.SetInteropBuffer(renderer.GetInteropPtr());
             sim.PackPositionsForRendering();
             renderer.UnmapInterop();
 
             renderer.Render(
                 camera.GetViewMatrix(),
                 camera.GetProjectionMatrix(window.GetAspect()),
-                glm::vec3(sphere.GetPosX(), sphere.GetPosY(), sphere.GetPosZ()),
-                config.sim.sphere_radius);
+                sphere_center,
+                glm::quat(
+                    sphere.GetVisualQuatW(),
+                    sphere.GetVisualQuatX(),
+                    sphere.GetVisualQuatY(),
+                    sphere.GetVisualQuatZ()),
+                config.sim.sphere_radius,
+                config.bald_patches,
+                mouse_world);
 
             window.EndFrame();
         }
@@ -267,6 +297,8 @@ namespace Toop {
         return 0;
 #endif
     }
+
+
     // --------------------------------------------------------------------------------
     int AppRunner::RunHeadless(const Config& config)
     {

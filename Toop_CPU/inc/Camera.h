@@ -36,6 +36,8 @@ namespace Toop {
         // getters
         const glm::vec3& GetPos()     const { return m_pos; }
         const glm::vec3& GetForward() const { return m_forward; }
+        const glm::vec3& GetRight() const { return m_right; }
+        const glm::vec3& GetUp()    const { return m_up; }
         float            GetSpeed()   const { return m_speed; }
 
     private:

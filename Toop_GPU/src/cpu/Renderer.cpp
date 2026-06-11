@@ -34,6 +34,11 @@ namespace Toop {
         return (dir / filename).string();
     }
 
+    static glm::vec3 QuatRotate(const glm::quat& q, const glm::vec3& v)
+    {
+        return q * v;
+    }
+
     // --------------------------------------------------------------------------------
     void Renderer::Init(const Config& config, HairSimulator& sim)
     {
@@ -301,13 +306,17 @@ namespace Toop {
         const glm::mat4& view,
         const glm::mat4& proj,
         const glm::vec3& sphere_pos,
-        float            sphere_radius)
+        const glm::quat& sphere_orientation,
+        float sphere_radius,
+        const BaldPatchConfig& bald_patches,
+        const glm::vec3& mouse_world)
     {
         if (!m_initialized) return;
 
         RenderGround(view, proj);
         RenderRoom(view, proj);
         RenderSphere(view, proj, sphere_pos, sphere_radius);
+        RenderEyes(view, proj, sphere_pos, sphere_orientation, sphere_radius, bald_patches, mouse_world);
         RenderHair(view, proj);
     }
 
@@ -382,6 +391,92 @@ namespace Toop {
         glBindVertexArray(0);
 
         m_room_shader->Unbind();
+    }
+
+    // --------------------------------------------------------------------------------
+    void Renderer::RenderEyes(
+        const glm::mat4& view,
+        const glm::mat4& proj,
+        const glm::vec3& sphere_pos,
+        const glm::quat& sphere_orientation,
+        float sphere_radius,
+        const BaldPatchConfig& bald_patches,
+        const glm::vec3& mouse_world)
+    {
+        float eye_radius = sphere_radius * 0.18f;
+        float pupil_radius = eye_radius * 0.6f;
+
+        // eye directions from bald patch config
+        glm::vec3 eye_dirs[2] = {
+            glm::normalize(glm::vec3(
+                bald_patches.eye_left_dir.x,
+                bald_patches.eye_left_dir.y,
+                bald_patches.eye_left_dir.z)),
+            glm::normalize(glm::vec3(
+                bald_patches.eye_right_dir.x,
+                bald_patches.eye_right_dir.y,
+                bald_patches.eye_right_dir.z))
+        };
+
+        for (int i = 0; i < 2; i++)
+        {
+            // eye world position
+            glm::vec3 eye_local = eye_dirs[i] * sphere_radius * 0.85f;
+            glm::vec3 eye_world = sphere_pos
+                + QuatRotate(sphere_orientation, eye_local);
+
+            // white sphere
+            glm::mat4 eye_scale = glm::scale(
+                glm::mat4(1.0f),
+                glm::vec3(eye_radius / sphere_radius));
+            glm::mat4 eye_model = glm::translate(glm::mat4(1.0f), eye_world)
+                * eye_scale;
+
+            m_sphere_shader->Bind();
+            m_sphere_shader->SetMat4("uModel", glm::value_ptr(eye_model));
+            m_sphere_shader->SetMat4("uView", glm::value_ptr(view));
+            m_sphere_shader->SetMat4("uProj", glm::value_ptr(proj));
+            m_sphere_shader->SetVec3("uColor", 0.95f, 0.95f, 0.95f);
+
+            glBindVertexArray(m_sphere_vao);
+            glDrawElements(GL_TRIANGLES, m_sphere_index_count, GL_UNSIGNED_INT, 0);
+            glBindVertexArray(0);
+
+            // pupil position - offset along eye forward direction
+            glm::vec3 eye_forward = glm::normalize(eye_world - sphere_pos);
+            
+            // pupil tracking - follow mouse
+            glm::vec3 to_mouse = mouse_world - eye_world;
+            float     max_offset = eye_radius * 0.25f;
+
+            // project to_mouse onto eye plane (perpendicular to eye_forward)
+            glm::vec3 projected = to_mouse
+                - glm::dot(to_mouse, eye_forward) * eye_forward;
+
+            // clamp to eye radius
+            float proj_len = glm::length(projected);
+            if (proj_len > max_offset)
+                projected = projected / proj_len * max_offset;
+
+            glm::vec3 pupil_world = eye_world
+                + eye_forward * eye_radius * 0.5f
+                + projected;
+
+            glm::mat4 pupil_scale = glm::scale(
+                glm::mat4(1.0f),
+                glm::vec3(pupil_radius / sphere_radius));
+            glm::mat4 pupil_model = glm::translate(glm::mat4(1.0f), pupil_world)
+                * pupil_scale;
+
+            m_sphere_shader->SetMat4("uModel", glm::value_ptr(pupil_model));
+            m_sphere_shader->SetVec3("uColor", 0.1f, 0.1f, 0.1f);
+
+            glBindVertexArray(m_sphere_vao);
+            glDrawElements(GL_TRIANGLES, m_sphere_index_count, GL_UNSIGNED_INT, 0);
+            glBindVertexArray(0);
+
+            m_sphere_shader->Unbind();
+        }
     }
 
     // --------------------------------------------------------------------------------

@@ -116,6 +116,10 @@ namespace Toop {
 
         UpdateOrientation(dt);
         UpdateIdleDetection(dt);
+
+        // sync visual orientation when not idle
+        if (!m_is_idle)
+            m_sphere_orientation = m_orientation;
     }
 
     // --------------------------------------------------------------------------------
@@ -140,6 +144,54 @@ namespace Toop {
         m_vel.x = m_drag_velocity.x * m_throw_multiplier;
         m_vel.y = m_drag_velocity.y * m_throw_multiplier;
         m_vel.z = m_drag_velocity.z * m_throw_multiplier;
+    }
+
+    // --------------------------------------------------------------------------------
+    void SpherePhysics::UpdateHeadTilt(
+        float mouse_world_x, float mouse_world_y, float mouse_world_z,
+        float camera_right_x, float camera_right_y, float camera_right_z,
+        float camera_up_x, float camera_up_y, float camera_up_z)
+    {
+        if (!m_is_idle)
+        {
+            // not idle - use rolling orientation as visual
+            // m_sphere_orientation = m_orientation;
+            return;
+        }
+
+        // offset from sphere center to mouse world position
+        Vec3 offset = {
+            mouse_world_x - m_pos.x,
+            mouse_world_y - m_pos.y,
+            mouse_world_z - m_pos.z
+        };
+
+        // project offset onto camera right and up
+        float dx = offset.x * camera_right_x
+            + offset.y * camera_right_y
+            + offset.z * camera_right_z;
+        float dy = offset.x * camera_up_x
+            + offset.y * camera_up_y
+            + offset.z * camera_up_z;
+
+        // map to tilt angles
+        float tilt_x = std::max(-m_max_tilt,
+            std::min(m_max_tilt, -dy * m_tilt_strength));
+        float tilt_y = std::max(-m_max_tilt,
+            std::min(m_max_tilt, dx * m_tilt_strength));
+
+        // build tilt quaternions
+        float half_x = tilt_x * 0.5f;
+        float half_y = tilt_y * 0.5f;
+
+        Quat rot_x = { sinf(half_x), 0.0f, 0.0f, cosf(half_x) };
+        Quat rot_y = { 0.0f, sinf(half_y), 0.0f, cosf(half_y) };
+
+        Quat tilt = NormalizeQuat(MultiplyQuat(rot_y, rot_x));
+
+        // blend tilt on top of rolling orientation
+        m_sphere_orientation = NormalizeQuat(
+            MultiplyQuat(m_orientation, tilt));
     }
 
     // --------------------------------------------------------------------------------

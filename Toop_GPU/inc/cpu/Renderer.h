@@ -16,7 +16,10 @@ namespace Toop {
             const glm::mat4& view,
             const glm::mat4& proj,
             const glm::vec3& sphere_pos,
-            float            sphere_radius);
+            const glm::quat& sphere_orientation,
+            float sphere_radius,
+            const BaldPatchConfig& bald_patches,
+            const glm::vec3& mouse_world);
         void Shutdown();
 
         float* GetInteropPtr() const { return m_interop_ptr; }
@@ -36,6 +39,15 @@ namespace Toop {
             const glm::vec3& pos, float radius);
         void RenderRoom(const glm::mat4& view, const glm::mat4& proj);
         void RenderGround(const glm::mat4& view, const glm::mat4& proj);
+
+        void RenderEyes(
+            const glm::mat4& view,
+            const glm::mat4& proj,
+            const glm::vec3& sphere_pos,
+            const glm::quat& sphere_orientation,
+            float sphere_radius,
+            const BaldPatchConfig& bald_patches,
+            const glm::vec3& mouse_world);
 
         void MapInteropBuffer();
         void UnmapInteropBuffer();

@@ -44,6 +44,16 @@ namespace Toop {
         float GetDeltaY() const { return m_delta.y; }
         float GetDeltaZ() const { return m_delta.z; }
 
+        void UpdateHeadTilt(
+            float mouse_world_x, float mouse_world_y, float mouse_world_z,
+            float camera_right_x, float camera_right_y, float camera_right_z,
+            float camera_up_x, float camera_up_y, float camera_up_z);
+
+        float GetVisualQuatX() const { return m_sphere_orientation.x; }
+        float GetVisualQuatY() const { return m_sphere_orientation.y; }
+        float GetVisualQuatZ() const { return m_sphere_orientation.z; }
+        float GetVisualQuatW() const { return m_sphere_orientation.w; }
+
     private:
         void UpdateOrientation(float dt);
         void UpdateIdleDetection(float dt);
@@ -62,6 +72,8 @@ namespace Toop {
         float m_ground_y = 0.0f;
         Vec3  m_room_min;
         Vec3  m_room_max;
+        float m_max_tilt = 0.15f;
+        float m_tilt_strength = 0.5f;
 
         // state
         Vec3  m_pos;
@@ -77,6 +89,8 @@ namespace Toop {
         // idle detection
         bool  m_is_idle = false;
         float m_idle_timer = 0.0f;
+
+        Quat m_sphere_orientation = { 0.0f, 0.0f, 0.0f, 1.0f };
     };
 
 } // namespace Toop
