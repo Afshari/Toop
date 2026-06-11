@@ -17,9 +17,15 @@
     <ClCompile Include="src\AppRunner.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\DebugUI.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inc\AppRunner.h">
+      <Filter>inc</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\DebugUI.h">
       <Filter>inc</Filter>
     </ClInclude>
   </ItemGroup>

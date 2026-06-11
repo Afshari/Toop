@@ -44,6 +44,11 @@ namespace Toop {
             float scale);
         void AddTime(float dt) { m_time += dt; }
 
+        void SetNumSubsteps(int n) { m_num_substeps = n; }
+        void SetCompliance(float c) { m_compliance = c; }
+        void SetDamping(float d) { m_damping = d; }
+        void SetGravity(float g) { m_gravity = g; }
+
     private:
         void AllocateBuffers();
         void FreeBuffers();

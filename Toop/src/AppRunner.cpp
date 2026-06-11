@@ -17,6 +17,9 @@
 #include <glm/gtc/quaternion.hpp>
 #endif
 
+#ifdef TOOP_DEBUG
+#include "DebugUI.h"
+#endif
 
 namespace Toop {
 
@@ -77,6 +80,19 @@ namespace Toop {
 
         Renderer renderer;
         renderer.Init(config, sim);
+
+#ifdef TOOP_DEBUG
+        DebugUI debug_ui;
+        debug_ui.Init(window.GetGLFWWindow());
+
+        DebugUIState debug_state;
+        debug_state.compliance = config.sim.compliance;
+        debug_state.damping = config.sim.damping;
+        debug_state.wind_strength = config.sim.wind_strength;
+        debug_state.wind_frequency = config.sim.wind_frequency;
+        debug_state.gravity = config.sim.gravity;
+        debug_state.num_substeps = config.sim.num_substeps;
+#endif
 
         renderer.MapInterop();
         sim.SetInteropBuffer(renderer.GetInteropPtr());
@@ -233,6 +249,18 @@ namespace Toop {
             prev_time = now;
             dt = std::min(dt, 0.033f); // clamp to avoid spiral of death
 
+#ifdef TOOP_DEBUG
+            debug_ui.BeginFrame();
+
+            // update read-only state
+            debug_state.fps = 1.0f / dt;
+            debug_state.frame_ms = dt * 1000.0f;
+            debug_state.sphere_speed = sqrtf(
+                sphere.GetDeltaX() * sphere.GetDeltaX() +
+                sphere.GetDeltaY() * sphere.GetDeltaY() +
+                sphere.GetDeltaZ() * sphere.GetDeltaZ()) / dt;
+#endif
+
             glm::vec3 mouse_world = glm::vec3(0.0f); // fallback
 
             Ray mouse_ray = RayUtils::ScreenToRay(
@@ -263,13 +291,34 @@ namespace Toop {
                 sphere.GetQuatX(), sphere.GetQuatY(), sphere.GetQuatZ(),
                 sphere.GetQuatW());
             sim_time += dt;
+
+#ifdef TOOP_DEBUG
             sim.SetWind(
-                config.sim.wind_strength * sinf(sim_time * config.sim.wind_frequency),
+                debug_state.wind_strength* sinf(sim_time* debug_state.wind_frequency),
                 0.0f,
-                config.sim.wind_strength * cosf(sim_time * config.sim.wind_frequency));
+                debug_state.wind_strength* cosf(sim_time* debug_state.wind_frequency));
+#else
+            sim.SetWind(
+                config.sim.wind_strength* sinf(sim_time* config.sim.wind_frequency),
+                0.0f,
+                config.sim.wind_strength* cosf(sim_time* config.sim.wind_frequency));
+#endif
+
             sim.AddTime(dt);
-            sim.Step(dt, is_dragging,
-                sphere.GetDeltaX(), sphere.GetDeltaY(), sphere.GetDeltaZ());
+
+#ifdef TOOP_DEBUG
+            if (!debug_state.freeze_sim)
+            {
+#endif
+                sim.Step(dt, is_dragging,
+                    sphere.GetDeltaX(), sphere.GetDeltaY(), sphere.GetDeltaZ());
+#ifdef TOOP_DEBUG
+            }
+            sim.SetNumSubsteps(debug_state.num_substeps);
+            sim.SetCompliance(debug_state.compliance);
+            sim.SetDamping(debug_state.damping);
+            sim.SetGravity(debug_state.gravity);
+#endif
 
             renderer.MapInterop();
             sim.SetInteropBuffer(renderer.GetInteropPtr());
@@ -289,9 +338,17 @@ namespace Toop {
                 config.bald_patches,
                 mouse_world);
 
+#ifdef TOOP_DEBUG
+            debug_ui.Render(debug_state);
+            debug_ui.EndFrame();
+#endif
+
             window.EndFrame();
         }
 
+#ifdef TOOP_DEBUG
+        debug_ui.Shutdown();
+#endif
         renderer.Shutdown();
         sim.Shutdown();
         return 0;

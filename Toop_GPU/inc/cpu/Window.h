@@ -50,6 +50,8 @@ namespace Toop {
 
         const MouseState& GetMouseState() const { return m_mouse; }
 
+        GLFWwindow* GetGLFWWindow() const { return m_window; }
+
     private:
         // GLFW static callbacks - forward to instance
         static void GlfwKeyCallback(GLFWwindow* w, int key, int scancode, int action, int mods);
