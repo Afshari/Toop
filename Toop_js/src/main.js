@@ -7,6 +7,7 @@ import { Sphere } from './Sphere.js'
 import Stats from 'stats.js'
 import GUI from 'lil-gui'
 import { inject } from '@vercel/analytics';
+import { rayFromCamera } from './utils/rayUtils.js'
 
 inject();
 
@@ -58,21 +59,23 @@ controls.target.set(0, 1.0, 0)
 // Mouse
 // ------------------------------------------------------------
 const mouseNDC = new THREE.Vector2(0, 0)
+const _rayOrigin = new THREE.Vector3()
+
 window.addEventListener('mousemove', (e) => {
     mouseNDC.x = (e.clientX / window.innerWidth) * 2 - 1
     mouseNDC.y = -(e.clientY / window.innerHeight) * 2 + 1
 
+    const ray = rayFromCamera(mouseNDC, camera, _rayOrigin)
+    sphere.debugUpdateRay(ray)
+
     if (sphere.isDragging) {
-        dragRaycaster.setFromCamera(mouseNDC, camera)
-        sphere.handleDragMove(dragRaycaster, camera, 1 / 60)
+        sphere.handleDragMove(ray, camera, 1 / 60)
     }
 })
 
-const dragRaycaster = new THREE.Raycaster()
-
 window.addEventListener('mousedown', (e) => {
-    dragRaycaster.setFromCamera(mouseNDC, camera)
-    const grabbed = sphere.handleDragStart(dragRaycaster)
+    const ray = rayFromCamera(mouseNDC, camera, _rayOrigin)
+    const grabbed = sphere.handleDragStart(ray)
     if (grabbed) controls.enabled = false
 })
 
@@ -117,6 +120,19 @@ window.addEventListener('keydown', (e) => {
             ambientLight.intensity = Math.max(0.0, ambientLight.intensity - 0.1)
             dirLight.intensity = Math.max(0.0, dirLight.intensity - 0.1)
             break
+        case 'o':
+        case 'O':
+            controls.enabled = !controls.enabled
+            orbitController.updateDisplay()
+            break
+        case 'd':
+        case 'D':
+            sphere.saveCurrentRay(rayFromCamera(mouseNDC, camera, _rayOrigin))
+            break
+        case 'c':
+        case 'C':
+            sphere.clearSavedRays()
+            break
     }
 })
 
@@ -128,8 +144,8 @@ window.addEventListener('touchstart', (e) => {
     const touch = e.touches[0]
     mouseNDC.x = (touch.clientX / window.innerWidth) * 2 - 1
     mouseNDC.y = -(touch.clientY / window.innerHeight) * 2 + 1
-    dragRaycaster.setFromCamera(mouseNDC, camera)
-    const grabbed = sphere.handleDragStart(dragRaycaster)
+    const ray = rayFromCamera(mouseNDC, camera, _rayOrigin)
+    const grabbed = sphere.handleDragStart(ray)
     if (grabbed) controls.enabled = false
     e.preventDefault()
 }, { passive: false })
@@ -139,8 +155,8 @@ window.addEventListener('touchmove', (e) => {
     mouseNDC.x = (touch.clientX / window.innerWidth) * 2 - 1
     mouseNDC.y = -(touch.clientY / window.innerHeight) * 2 + 1
     if (sphere.isDragging) {
-        dragRaycaster.setFromCamera(mouseNDC, camera)
-        sphere.handleDragMove(dragRaycaster, camera, 1 / 60)
+        const ray = rayFromCamera(mouseNDC, camera, _rayOrigin)
+        sphere.handleDragMove(ray, camera, 1 / 60)
     }
     e.preventDefault()
 }, { passive: false })
@@ -210,21 +226,36 @@ strandGeometry.connectSimulation(simulation.getPositionTexture())
 // GUI
 // ------------------------------------------------------------
 const gui = new GUI()
-gui.close()
 
 const simFolder = gui.addFolder('Simulation')
 simFolder.add(PARAMS, 'wind_strength', 0, 1, 0.01)
 simFolder.add(PARAMS, 'wind_frequency', 0, 2, 0.1)
 simFolder.add(PARAMS, 'damping', 0.98, 1.0, 0.001)
 simFolder.add(PARAMS, 'sphere_collision_compliance', 0, 0.01, 0.0001)
+simFolder.close()
 
 const envFolder = gui.addFolder('Environment')
-// const envParams = { hairColor: '#ddccaa' }
+envFolder.close()
 envFolder.addColor(PARAMS, 'hair_color').onChange(v => {
     strandGeometry.mesh.material.uniforms.uColor.value.set(v)
 })
 envFolder.addColor(PARAMS, 'sphere_color').onChange(v => {
     sphere.mesh.material.color.set(v)
+})
+
+const debugFolder = gui.addFolder('Debug')
+const debugParams = {
+    showAxes: true,
+    showVelocity: true,
+}
+const orbitController = debugFolder.add(controls, 'enabled').name('Orbit Camera')
+
+debugFolder.add(debugParams, 'showAxes').name('Local Axes').onChange(v => {
+    sphere.axesHelper.visible = v
+})
+
+debugFolder.add(debugParams, 'showVelocity').name('Velocity Vector').onChange(v => {
+    // sphere.velocityArrow.visible = v
 })
 
 // ------------------------------------------------------------
