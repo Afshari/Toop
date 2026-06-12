@@ -39,6 +39,9 @@
     <ClInclude Include="inc\cpu\Renderer.h">
       <Filter>inc\cpu</Filter>
     </ClInclude>
+    <ClInclude Include="inc\cpu\DebugRenderer.h">
+      <Filter>inc\cpu</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\gpu\HairSim.cu">
@@ -56,6 +59,9 @@
       <Filter>src\cpu</Filter>
     </ClCompile>
     <ClCompile Include="src\cpu\Renderer.cpp">
+      <Filter>src\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpu\DebugRenderer.cpp">
       <Filter>src\cpu</Filter>
     </ClCompile>
   </ItemGroup>

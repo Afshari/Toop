@@ -97,6 +97,9 @@ namespace Toop {
         debug_state.wind_frequency = config.sim.wind_frequency;
         debug_state.gravity = config.sim.gravity;
         debug_state.num_substeps = config.sim.num_substeps;
+
+        DebugRenderer debug_renderer;
+        debug_renderer.Init();
 #endif
 
         // --- main loop ---
@@ -132,6 +135,61 @@ namespace Toop {
 
             // --- update ---
             sphere.Update(dt);
+#ifdef TOOP_DEBUG
+            // mouse ray
+            //if (debug_state.show_debug_rays)
+            //{
+            //    const auto& mouse = window.GetMouseState();
+            //    Ray ray = RayUtils::ScreenToRay(
+            //        mouse.x, mouse.y,
+            //        window.GetWidth(), window.GetHeight(),
+            //        view, proj);
+            //    debug_renderer.AddRay(ray.origin, ray.direction, 10.0f, glm::vec3(1.0f, 1.0f, 0.0f));
+            //}
+            if (debug_state.show_debug_rays)
+            {
+                debug_renderer.AddLine(
+                    glm::vec3(-2.0f, 1.5f, 0.0f),
+                    glm::vec3(2.0f, 1.5f, 0.0f),
+                    glm::vec3(1.0f, 1.0f, 0.0f)); // horizontal yellow line through sphere area
+            }
+
+            // drag plane
+            if (debug_state.show_drag_plane && input.IsDragging())
+            {
+                debug_renderer.AddPlane(
+                    input.GetDragPlaneCenter(),
+                    camera.GetForward(),
+                    2.0f, glm::vec3(0.0f, 1.0f, 1.0f)); // cyan
+            }
+
+            // sphere velocity arrow
+            if (debug_state.show_velocity)
+            {
+                debug_renderer.AddArrow(
+                    glm::vec3(sphere.GetPosX(),
+                        sphere.GetPosY(),
+                        sphere.GetPosZ()),
+                    glm::vec3(sphere.GetDeltaX(),
+                        sphere.GetDeltaY(),
+                        sphere.GetDeltaZ()),
+                    10.0f,
+                    glm::vec3(1.0f, 0.0f, 0.0f)); // red
+            }
+
+            // light direction
+            if (debug_state.show_light)
+            {
+                debug_renderer.AddArrow(
+                    glm::vec3(sphere.GetPosX(),
+                        sphere.GetPosY() + 2.0f,
+                        sphere.GetPosZ()),
+                    glm::vec3(1.0f, 2.0f, 1.0f),
+                    1.0f,
+                    glm::vec3(1.0f, 1.0f, 0.5f)); // warm yellow
+            }
+#endif
+
             sphere.UpdateHeadTilt(
                 input.GetMouseWorld().x,
                 input.GetMouseWorld().y,
@@ -194,6 +252,7 @@ namespace Toop {
                 input.GetMouseWorld());
 
 #ifdef TOOP_DEBUG
+            debug_renderer.Render(view, proj);
             debug_ui.Render(debug_state);
             debug_ui.EndFrame();
 #endif
@@ -202,6 +261,7 @@ namespace Toop {
         }
 
 #ifdef TOOP_DEBUG
+        debug_renderer.Shutdown();
         debug_ui.Shutdown();
 #endif
 

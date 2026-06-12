@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="inc\cpu\DebugRenderer.h" />
     <ClInclude Include="inc\cpu\HairSimulator.h" />
     <ClInclude Include="inc\cpu\Renderer.h" />
     <ClInclude Include="inc\cpu\ShaderProgram.h" />
@@ -28,6 +29,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\cpu\DebugRenderer.cpp" />
     <ClCompile Include="src\cpu\Renderer.cpp" />
     <ClCompile Include="src\cpu\ShaderProgram.cpp" />
     <ClCompile Include="src\cpu\Window.cpp" />
@@ -69,7 +71,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;TOOP_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>$(ProjectDir)inc;$(SolutionDir)Toop_CPU\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>

@@ -27,6 +27,7 @@ namespace Toop {
 
         // called every frame from main loop
         void UpdateMouseWorld(const glm::mat4& view, const glm::mat4& proj);
+        const glm::vec3& GetDragPlaneCenter() const { return m_drag_plane_center; }
 
     private:
         void OnKey(int key, int action);
