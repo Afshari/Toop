@@ -1,0 +1,77 @@
+services:
+
+  # -------------------------------------------------------------------------
+  # toop - run headless bench (default)
+  # Usage: docker compose up toop
+  # -------------------------------------------------------------------------
+  toop:
+    image: toop:latest
+    build: .
+    volumes:
+      - ./config.json:/app/config.json:ro
+      - ./Toop_Bench/results:/app/Toop_Bench/results
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # -------------------------------------------------------------------------
+  # bench - run ncu/nsys sweep scripts
+  # Usage: docker compose run bench python scripts/run_ncu_sweep.py --help
+  # -------------------------------------------------------------------------
+  bench:
+    image: toop:latest
+    volumes:
+      - ./config.json:/app/config.json:ro
+      - ./Toop_Bench/results:/app/Toop_Bench/results
+      - ./Toop_Bench/params:/app/Toop_Bench/params:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    entrypoint: ["/app/.venv/bin/python"]
+    profiles: ["bench"]
+
+  # -------------------------------------------------------------------------
+  # tests - run Toop_Tests binary
+  # Usage: docker compose run tests
+  # -------------------------------------------------------------------------
+  tests:
+    image: toop:latest
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    entrypoint: ["/app/x64/Release/Toop_Tests"]
+    profiles: ["test"]
+
+  # -------------------------------------------------------------------------
+  # shell - interactive bash for debugging inside the container
+  # Usage: docker compose run shell
+  # -------------------------------------------------------------------------
+  shell:
+    image: toop:latest
+    volumes:
+      - ./config.json:/app/config.json:ro
+      - ./Toop_Bench/results:/app/Toop_Bench/results
+      - ./Toop_Bench/params:/app/Toop_Bench/params:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    entrypoint: ["/bin/bash"]
+    stdin_open: true
+    tty: true
+    profiles: ["shell"]
