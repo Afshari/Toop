@@ -1,7 +1,6 @@
 #pragma once
-
+#ifndef TOOP_HEADLESS
 #ifdef TOOP_DEBUG
-
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <vector>
@@ -47,5 +46,5 @@ namespace Toop {
     };
 
 } // namespace Toop
-
 #endif // TOOP_DEBUG
+#endif // TOOP_HEADLESS

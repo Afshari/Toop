@@ -1,11 +1,12 @@
 #pragma once
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
+#ifndef TOOP_HEADLESS
 #include "Config.h"
 #include "Camera.h"
 #include "SpherePhysics.h"
 #include "RayUtils.h"
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 #include "cpu/Window.h"
 
 namespace Toop {
@@ -48,3 +49,4 @@ namespace Toop {
     };
 
 } // namespace Toop
+#endif // TOOP_HEADLESS

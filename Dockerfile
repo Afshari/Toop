@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     python3-venv \
     libboost-dev \
+    libglm-dev \
     ca-certificates \
     linux-tools-generic \
     valgrind \

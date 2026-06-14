@@ -1,4 +1,5 @@
 #pragma once
+#ifndef TOOP_HEADLESS
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include "ShaderProgram.h"
@@ -85,3 +86,4 @@ namespace Toop {
     };
 
 } // namespace Toop
+#endif // TOOP_HEADLESS
