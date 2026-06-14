@@ -2,11 +2,11 @@
     "sim": {
         "num_strands": 14549,
         "num_segments": 5,
-        "segment_length": 0.035,
+        "segment_length": 0.025,
         "gravity": -1.0,
-        "num_substeps": 15,
+        "num_substeps": 30,
         "damping": 0.995,
-        "compliance": 0.001,
+        "compliance": 0.000001,
         "sphere_radius": 0.4,
         "sphere_center": { "x": 0.0, "y": 1.5, "z": 0.0 },
         "wind_strength": 0.15,
@@ -29,8 +29,8 @@
     "bald_patches": {
         "eye_left_dir":  { "x": -0.25, "y": 0.15, "z": 1.0 },
         "eye_right_dir": { "x":  0.25, "y": 0.15, "z": 1.0 },
-        "eye_threshold": 0.97,
-        "top_threshold": 0.95
+        "eye_threshold": 0.95,
+        "top_threshold": 1.0
     },
     "render": {
         "window_width": 1280,

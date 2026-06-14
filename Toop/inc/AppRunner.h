@@ -1,6 +1,10 @@
 #pragma once
 #include "Config.h"
 
+#ifdef TOOP_DEBUG
+#include "cpu/DebugRenderer.h"
+#endif
+
 namespace Toop {
 
     class AppRunner

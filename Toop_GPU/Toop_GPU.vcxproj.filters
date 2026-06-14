@@ -30,6 +30,18 @@
     <ClInclude Include="inc\gpu\CudaTimer.cuh">
       <Filter>inc\gpu</Filter>
     </ClInclude>
+    <ClInclude Include="inc\cpu\ShaderProgram.h">
+      <Filter>inc\cpu</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\cpu\Window.h">
+      <Filter>inc\cpu</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\cpu\Renderer.h">
+      <Filter>inc\cpu</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\cpu\DebugRenderer.h">
+      <Filter>inc\cpu</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\gpu\HairSim.cu">
@@ -38,5 +50,19 @@
     <CudaCompile Include="src\gpu\HairSimulator.cu">
       <Filter>src\gpu</Filter>
     </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\cpu\ShaderProgram.cpp">
+      <Filter>src\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpu\Window.cpp">
+      <Filter>src\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpu\Renderer.cpp">
+      <Filter>src\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cpu\DebugRenderer.cpp">
+      <Filter>src\cpu</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
