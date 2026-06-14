@@ -18,6 +18,8 @@ RUN apt-get update && apt-get install -y \
     python3-venv \
     libboost-dev \
     ca-certificates \
+    linux-tools-generic \
+    valgrind \
     && rm -rf /var/lib/apt/lists/*
 
 # ---------------------------------------------------------------------------

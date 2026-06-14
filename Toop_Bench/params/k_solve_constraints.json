@@ -1,0 +1,33 @@
+{
+    "kernel": "k_solve_constraints_xpbd",
+    "cli_name": "k_solve_constraints_xpbd",
+    "executable": "../../x64/Release/Toop_Bench",
+    "config_file": "../../config.json",
+    "results_dir": "results",
+    "ncu": {
+        "output_dir": "results/ncu_reports",
+        "extra_args": "--target-processes all",
+        "metrics": [
+            "sm__throughput.avg.pct_of_peak_sustained_elapsed",
+            "dram__throughput.avg.pct_of_peak_sustained_elapsed",
+            "l1tex__throughput.avg.pct_of_peak_sustained_elapsed",
+            "lts__throughput.avg.pct_of_peak_sustained_elapsed",
+            "sm__warps_active.avg.pct_of_peak_sustained_elapsed",
+            "dram__bytes_read.sum",
+            "dram__bytes_write.sum",
+            "l1tex__data_pipe_lsu_wavefronts_mem_shared_op_ld.sum",
+            "l1tex__data_pipe_lsu_wavefronts_mem_shared_op_st.sum",
+            "smsp__sass_average_data_bytes_per_sector_mem_global_op_ld.pct",
+            "smsp__sass_average_data_bytes_per_sector_mem_global_op_st.pct",
+            "smsp__warp_issue_stalled_lg_throttle_per_warp_active.pct",
+            "smsp__warp_issue_stalled_long_scoreboard_per_warp_active.pct",
+            "smsp__warp_issue_stalled_short_scoreboard_per_warp_active.pct",
+            "smsp__warp_issue_stalled_wait_per_warp_active.pct",
+            "sm__warps_active.avg.pct_of_peak_sustained_active",
+            "sm__occupancy.avg.pct_of_peak_sustained_active"
+        ]
+    },
+    "sweep": {
+        "threads_per_block": [64, 128, 256, 512]
+    }
+}

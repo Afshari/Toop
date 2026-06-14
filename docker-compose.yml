@@ -35,6 +35,11 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+    cap_add:
+      - SYS_ADMIN
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
     entrypoint: ["/app/.venv/bin/python"]
     profiles: ["bench"]
 

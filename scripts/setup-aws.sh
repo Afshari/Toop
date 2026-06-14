@@ -94,6 +94,13 @@ echo "  3. Add to GitHub:   Settings -> SSH and GPG keys -> New SSH key"
 echo "  4. Test:            ssh -T git@github.com"
 
 # ---------------------------------------------------------------------------
+# perf - allow performance counters inside Docker containers
+# ---------------------------------------------------------------------------
+echo "[INFO] Configuring perf event paranoid level..."
+echo 'kernel.perf_event_paranoid=-1' | sudo tee /etc/sysctl.d/99-perf.conf
+sudo sysctl -w kernel.perf_event_paranoid=-1
+
+# ---------------------------------------------------------------------------
 # Verification
 # ---------------------------------------------------------------------------
 echo ""
