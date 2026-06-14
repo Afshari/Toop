@@ -38,8 +38,8 @@ target_include_directories(Toop_Bench PRIVATE
 # Link deps - no OpenGL, no GLFW, no GLAD
 # ---------------------------------------------------------------------------
 target_link_libraries(Toop_Bench PRIVATE
-    ${OUTPUT_DIR}/libToop_CPU.a
     ${OUTPUT_DIR}/libToop_GPU.a
+    ${OUTPUT_DIR}/libToop_CPU.a
     CUDA::cudart_static
     CUDA::curand
 )

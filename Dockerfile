@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y \
     libboost-dev \
     libglm-dev \
     ca-certificates \
-    linux-tools-generic \
+    linux-tools-aws \
     valgrind \
     && rm -rf /var/lib/apt/lists/*
 

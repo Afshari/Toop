@@ -135,27 +135,25 @@ def run_ncu(cmd: list[str], kernel_name: str) -> str:
 
 # ---------------------------------------------------------------------------
 def parse_ncu_csv(raw_output: str, kernel_name: str) -> dict:
-    """
-    Parse ncu --csv output. ncu emits comment lines starting with '==',
-    followed by actual CSV rows. We skip the comment lines and parse the rest.
-    """
     csv_lines = [
         line for line in raw_output.splitlines()
-        if not line.startswith("==") and line.strip()
+        if not line.startswith("==")
+        and not line.startswith("[")
+        and line.strip()
     ]
 
     if not csv_lines:
-        print(f"[WARN] No CSV output from ncu for kernel: {kernel_name}")
+        print(f"[WARN] No CSV output for kernel: {kernel_name}")
         return {}
 
-    reader = csv.DictReader(csv_lines)
+    import csv as csv_mod
+    reader = csv_mod.DictReader(csv_lines)
     metrics = {}
 
     for row in reader:
-        metric_name = row.get("Metric Name", "").strip()
-        metric_value = row.get("Metric Value", "").strip()
+        metric_name  = row.get("Metric Name", "").strip().strip('"')
+        metric_value = row.get("Metric Value", "").strip().strip('"')
         if metric_name:
-            # Strip commas from numeric values (ncu uses locale formatting)
             metric_value = metric_value.replace(",", "")
             metrics[metric_name] = metric_value
 
