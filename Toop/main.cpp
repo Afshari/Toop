@@ -2,9 +2,12 @@
 #include "CLParser.h"
 #include <iostream>
 
+#ifndef TOOP_HEADLESS
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
+#endif
+
 
 int main(int argc, char* argv[])
 {

@@ -18,7 +18,7 @@ This repository contains two implementations of the same simulation:
 | Directory | Description |
 |-----------|-------------|
 | [`Toop_js/`](./Toop_js/README.md) | JavaScript version — runs in the browser using Three.js and GPGPU. Live demo available. |
-| `Toop_cpp/` | C++ version — high-performance native implementation. **Under development.** |
+| [`docs/readme-cpp.md`](./docs/readme-cpp.md) | C++ / CUDA version — high-performance native implementation with GPU profiling infrastructure. |
 
 See the [Toop.js README](./Toop_js/README.md) for details on the JavaScript version, how to run it locally, and technical implementation notes.
 

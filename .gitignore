@@ -22,6 +22,7 @@ Toop_Bench/**/*.pyo
 # Benchmark
 Toop_Bench/.coverage
 Toop_Bench/*.csv
+Toop_Bench/results/
 
 # Benchmark staging folders
 staging/

@@ -1,4 +1,5 @@
 #pragma once
+#ifndef TOOP_HEADLESS
 #include <glad/glad.h>
 #include <string>
 #include <unordered_map>
@@ -45,3 +46,4 @@ namespace Toop {
     };
 
 } // namespace Toop
+#endif // TOOP_HEADLESS

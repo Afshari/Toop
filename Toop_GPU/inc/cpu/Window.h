@@ -1,4 +1,5 @@
 #pragma once
+#ifndef TOOP_HEADLESS
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <functional>
@@ -73,3 +74,4 @@ namespace Toop {
     };
 
 } // namespace Toop
+#endif // TOOP_HEADLESS

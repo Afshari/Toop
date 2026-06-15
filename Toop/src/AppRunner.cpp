@@ -1,6 +1,5 @@
 #include "AppRunner.h"
 #include "cpu/HairSimulator.h"
-#include "cpu/Renderer.h"
 #include "SpherePhysics.h"
 #include "RayUtils.h"
 #include "InputHandler.h"
@@ -10,6 +9,7 @@
 #include <filesystem>
 
 #ifndef TOOP_HEADLESS
+#include "cpu/Renderer.h"
 #include "cpu/Window.h"
 #include "Camera.h"
 #include "cpu/HairSimulator.h"
