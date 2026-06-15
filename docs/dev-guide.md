@@ -65,7 +65,7 @@ docker compose build --no-cache
 
 Run once on a fresh EC2 instance:
 ```bash
-chmod +x setup_aws.sh && ./setup_aws.sh
+chmod +x scripts/setup-aws.sh && ./scripts/setup-aws.sh
 ```
 
 Log out and back in after it completes (required for Docker group membership).
