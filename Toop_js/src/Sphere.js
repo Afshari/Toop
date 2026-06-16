@@ -97,6 +97,21 @@ export class Sphere {
         this.savedRayLines = []
         this._savedRayMaterial = new THREE.LineBasicMaterial({ color: 0xffff00 })
         this._scene = scene  // needed to add/remove saved lines later
+
+        // debug: drag plane visualization
+        const planeGeo = new THREE.PlaneGeometry(2, 2)
+        const planeMat = new THREE.MeshBasicMaterial({
+            color: 0x4444ff,
+            transparent: true,
+            opacity: 0.3,
+            side: THREE.DoubleSide,
+        })
+        this.dragPlaneMesh = new THREE.Mesh(planeGeo, planeMat)
+        this.dragPlaneMesh.visible = false
+        scene.add(this.dragPlaneMesh)
+
+        this._planeAlignQuat = new THREE.Quaternion()
+        this._planeDefaultNormal = new THREE.Vector3(0, 0, 1)
     }
 
     update(dt) {
@@ -157,6 +172,8 @@ export class Sphere {
     handleDragMove(ray, camera, dt) {
         camera.getWorldDirection(this._forward)
 
+        this.debugUpdateDragPlane(this._forward, this.center)
+
         const hit = rayPlaneIntersect(ray.origin, ray.dir, this._forward, this.center)
         if (!hit) return
 
@@ -172,6 +189,7 @@ export class Sphere {
     handleDragEnd() {
         this.isDragging = false
         this.velocity.copy(this.dragVelocity).multiplyScalar(PARAMS.throw_multiplier)
+        this.dragPlaneMesh.visible = false
     }
 
     updateEyes(camera, mouseNDC) {
@@ -314,6 +332,13 @@ export class Sphere {
         } else {
             this.rayHitMarker.visible = false
         }
+    }
+
+    debugUpdateDragPlane(planeNormal, planePoint) {
+        this.dragPlaneMesh.position.set(planePoint.x, planePoint.y, planePoint.z)
+        this._planeAlignQuat.setFromUnitVectors(this._planeDefaultNormal, planeNormal)
+        this.dragPlaneMesh.quaternion.copy(this._planeAlignQuat)
+        this.dragPlaneMesh.visible = true
     }
 
     saveCurrentRay(ray) {
