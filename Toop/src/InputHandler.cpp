@@ -8,12 +8,21 @@ namespace Toop {
         Window* window,
         Camera* camera,
         SpherePhysics* sphere,
-        const Config* config)
+        const Config* config
+#ifdef TOOP_DEBUG
+        , DebugRenderer* debug_renderer
+        , Renderer* renderer
+#endif
+    )
     {
         m_window = window;
         m_camera = camera;
         m_sphere = sphere;
         m_config = config;
+#ifdef TOOP_DEBUG
+        m_debug_renderer = debug_renderer;
+        m_renderer = renderer;
+#endif
     }
 
     // --------------------------------------------------------------------------------
@@ -53,6 +62,8 @@ namespace Toop {
             m_window->GetWidth(), m_window->GetHeight(),
             view, proj);
 
+        m_last_ray = ray;
+
         glm::vec3 sphere_center(
             m_sphere->GetPosX(),
             m_sphere->GetPosY(),
@@ -88,6 +99,50 @@ namespace Toop {
             case GLFW_KEY_2: m_camera->SetPreset(2, sphere_pos); break;
             case GLFW_KEY_3: m_camera->SetPreset(3, sphere_pos); break;
             case GLFW_KEY_4: m_camera->SetPreset(4, sphere_pos); break;
+#ifdef TOOP_DEBUG
+            case GLFW_KEY_R:
+                if (m_debug_renderer)
+                {
+                    // camera ray
+                    m_debug_renderer->AddPersistentLine(
+                        m_last_ray.origin,
+                        m_last_ray.origin + glm::normalize(m_last_ray.direction) * 5.0f,
+                        glm::vec3(1.0f, 1.0f, 0.0f));
+
+                    // eye rays
+                    if (m_renderer)
+                    {
+                        glm::quat orientation(
+                            m_sphere->GetVisualQuatW(),
+                            m_sphere->GetVisualQuatX(),
+                            m_sphere->GetVisualQuatY(),
+                            m_sphere->GetVisualQuatZ());
+
+                        glm::vec3 sphere_pos(
+                            m_sphere->GetPosX(),
+                            m_sphere->GetPosY(),
+                            m_sphere->GetPosZ());
+
+                        for (int i = 0; i < 2; i++)
+                        {
+                            glm::vec3 eye_pos = m_renderer->GetEyeWorldPos(
+                                i, sphere_pos, orientation,
+                                m_config->sim.sphere_radius,
+                                m_config->bald_patches);
+
+                            m_debug_renderer->AddPersistentLine(
+                                eye_pos,
+                                m_mouse_world,
+                                glm::vec3(1.0f, 1.0f, 0.0f));
+                        }
+                    }
+                }
+                break;
+            case GLFW_KEY_C:
+                if (m_debug_renderer)
+                    m_debug_renderer->ClearPersistent();
+                break;
+#endif
             }
         }
     }

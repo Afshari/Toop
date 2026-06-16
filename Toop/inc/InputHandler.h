@@ -9,6 +9,11 @@
 #include <glm/glm.hpp>
 #include "cpu/Window.h"
 
+#ifdef TOOP_DEBUG
+#include "cpu/DebugRenderer.h"
+#include "cpu/Renderer.h"
+#endif
+
 namespace Toop {
 
     class InputHandler
@@ -18,7 +23,12 @@ namespace Toop {
             Window* window,
             Camera* camera,
             SpherePhysics* sphere,
-            const Config* config);
+            const Config* config
+#ifdef TOOP_DEBUG
+            , DebugRenderer* debug_renderer = nullptr
+            , Renderer* renderer = nullptr
+#endif
+        );
 
         void RegisterCallbacks();
 
@@ -46,6 +56,13 @@ namespace Toop {
         bool      m_prev_left = false;
         glm::vec3 m_drag_plane_center = {};
         glm::vec3 m_mouse_world = {};
+
+        Ray       m_last_ray = {};
+
+#ifdef TOOP_DEBUG
+        DebugRenderer* m_debug_renderer = nullptr;
+        Renderer* m_renderer = nullptr;
+#endif
     };
 
 } // namespace Toop

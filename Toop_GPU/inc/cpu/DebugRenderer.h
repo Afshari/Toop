@@ -29,6 +29,12 @@ namespace Toop {
         void AddArrow(const glm::vec3& origin, const glm::vec3& dir,
             float scale, const glm::vec3& color);
 
+        // persistent lines - survive across frames until cleared
+        void AddPersistentLine(const glm::vec3& start, const glm::vec3& end,
+            const glm::vec3& color);
+        void ClearPersistent();
+        int  GetPersistentCount() const { return (int)m_persistent_vertices.size() / 2; }
+
         // render all primitives and clear for next frame
         void Render(const glm::mat4& view, const glm::mat4& proj);
 
@@ -43,6 +49,7 @@ namespace Toop {
         bool   m_initialized = false;
 
         std::vector<DebugVertex> m_vertices;
+        std::vector<DebugVertex> m_persistent_vertices;
     };
 
 } // namespace Toop

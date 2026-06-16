@@ -84,7 +84,14 @@ namespace Toop {
         renderer.UnmapInterop();
 
         InputHandler input;
+#ifdef TOOP_DEBUG
+        DebugRenderer debug_renderer;
+        debug_renderer.Init();
+
+        input.Init(&window, &camera, &sphere, &config, &debug_renderer, &renderer);
+#else
         input.Init(&window, &camera, &sphere, &config);
+#endif
         input.RegisterCallbacks();
 
 #ifdef TOOP_DEBUG
@@ -97,9 +104,6 @@ namespace Toop {
         debug_state.wind_frequency = config.sim.wind_frequency;
         debug_state.gravity = config.sim.gravity;
         debug_state.num_substeps = config.sim.num_substeps;
-
-        DebugRenderer debug_renderer;
-        debug_renderer.Init();
 #endif
 
         // --- main loop ---
@@ -137,21 +141,14 @@ namespace Toop {
             sphere.Update(dt);
 #ifdef TOOP_DEBUG
             // mouse ray
-            //if (debug_state.show_debug_rays)
-            //{
-            //    const auto& mouse = window.GetMouseState();
-            //    Ray ray = RayUtils::ScreenToRay(
-            //        mouse.x, mouse.y,
-            //        window.GetWidth(), window.GetHeight(),
-            //        view, proj);
-            //    debug_renderer.AddRay(ray.origin, ray.direction, 10.0f, glm::vec3(1.0f, 1.0f, 0.0f));
-            //}
             if (debug_state.show_debug_rays)
             {
-                debug_renderer.AddLine(
-                    glm::vec3(-2.0f, 1.5f, 0.0f),
-                    glm::vec3(2.0f, 1.5f, 0.0f),
-                    glm::vec3(1.0f, 1.0f, 0.0f)); // horizontal yellow line through sphere area
+                const auto& mouse = window.GetMouseState();
+                Ray ray = RayUtils::ScreenToRay(
+                    mouse.x, mouse.y,
+                    window.GetWidth(), window.GetHeight(),
+                    view, proj);
+                debug_renderer.AddRay(ray.origin, ray.direction, 10.0f, glm::vec3(1.0f, 1.0f, 0.0f));
             }
 
             // drag plane
@@ -189,13 +186,35 @@ namespace Toop {
                     glm::vec3(1.0f, 1.0f, 0.5f)); // warm yellow
             }
 #endif
+            Ray mouse_ray = RayUtils::ScreenToRay(
+                window.GetMouseState().x,
+                window.GetMouseState().y,
+                window.GetWidth(), window.GetHeight(),
+                view, proj);
 
-            sphere.UpdateHeadTilt(
-                input.GetMouseWorld().x,
-                input.GetMouseWorld().y,
-                input.GetMouseWorld().z,
-                camera.GetRight().x, camera.GetRight().y, camera.GetRight().z,
-                camera.GetUp().x, camera.GetUp().y, camera.GetUp().z);
+            glm::vec3 eye_left = renderer.GetEyeWorldPos(0,
+                glm::vec3(sphere.GetPosX(), sphere.GetPosY(), sphere.GetPosZ()),
+                glm::quat(sphere.GetVisualQuatW(), sphere.GetVisualQuatX(),
+                    sphere.GetVisualQuatY(), sphere.GetVisualQuatZ()),
+                config.sim.sphere_radius, config.bald_patches);
+
+            glm::vec3 eye_right = renderer.GetEyeWorldPos(1,
+                glm::vec3(sphere.GetPosX(), sphere.GetPosY(), sphere.GetPosZ()),
+                glm::quat(sphere.GetVisualQuatW(), sphere.GetVisualQuatX(),
+                    sphere.GetVisualQuatY(), sphere.GetVisualQuatZ()),
+                config.sim.sphere_radius, config.bald_patches);
+
+            glm::vec3 eye_center = (eye_left + eye_right) * 0.5f;
+
+            glm::vec3 tilt_mouse_world = eye_center;
+            RayUtils::RayCameraPlaneIntersect(
+                mouse_ray, eye_center,
+                camera.GetForward(), tilt_mouse_world);
+
+            //sphere.UpdateHeadTilt(
+            //    tilt_mouse_world.x, tilt_mouse_world.y, tilt_mouse_world.z,
+            //    camera.GetRight().x, camera.GetRight().y, camera.GetRight().z,
+            //    camera.GetUp().x, camera.GetUp().y, camera.GetUp().z);
 
             sim.SetSphereState(
                 sphere.GetPosX(), sphere.GetPosY(), sphere.GetPosZ(),
@@ -249,7 +268,9 @@ namespace Toop {
                     sphere.GetVisualQuatZ()),
                 config.sim.sphere_radius,
                 config.bald_patches,
-                input.GetMouseWorld());
+                mouse_ray.origin,
+                mouse_ray.direction,
+                camera.GetForward());
 
 #ifdef TOOP_DEBUG
             debug_renderer.Render(view, proj);

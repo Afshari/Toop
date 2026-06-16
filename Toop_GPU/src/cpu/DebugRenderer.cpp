@@ -58,6 +58,7 @@ namespace Toop {
         glBindVertexArray(0);
 
         m_vertices.reserve(1024);
+        m_persistent_vertices.reserve(1024);
         m_initialized = true;
         std::cout << "[INFO] DebugRenderer initialized." << std::endl;
     }
@@ -198,7 +199,7 @@ namespace Toop {
         const glm::mat4& view,
         const glm::mat4& proj)
     {
-        if (m_vertices.empty()) return;
+        if (m_vertices.empty() && m_persistent_vertices.empty()) return;
 
         glUseProgram(m_shader);
         glUniformMatrix4fv(
@@ -210,16 +211,44 @@ namespace Toop {
 
         glBindVertexArray(m_vao);
         glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-        glBufferData(GL_ARRAY_BUFFER,
-            m_vertices.size() * sizeof(DebugVertex),
-            m_vertices.data(), GL_DYNAMIC_DRAW);
 
-        glDrawArrays(GL_LINES, 0, (GLsizei)m_vertices.size());
+        // draw per-frame vertices
+        if (!m_vertices.empty())
+        {
+            glBufferData(GL_ARRAY_BUFFER,
+                m_vertices.size() * sizeof(DebugVertex),
+                m_vertices.data(), GL_DYNAMIC_DRAW);
+            glDrawArrays(GL_LINES, 0, (GLsizei)m_vertices.size());
+            m_vertices.clear();
+        }
+
+        // draw persistent vertices - not cleared
+        if (!m_persistent_vertices.empty())
+        {
+            glBufferData(GL_ARRAY_BUFFER,
+                m_persistent_vertices.size() * sizeof(DebugVertex),
+                m_persistent_vertices.data(), GL_DYNAMIC_DRAW);
+            glDrawArrays(GL_LINES, 0, (GLsizei)m_persistent_vertices.size());
+        }
+
         glBindVertexArray(0);
         glUseProgram(0);
+    }
 
-        // clear for next frame
-        m_vertices.clear();
+    // --------------------------------------------------------------------------------
+    void DebugRenderer::AddPersistentLine(
+        const glm::vec3& start,
+        const glm::vec3& end,
+        const glm::vec3& color)
+    {
+        m_persistent_vertices.push_back({ start, color });
+        m_persistent_vertices.push_back({ end,   color });
+    }
+
+    // --------------------------------------------------------------------------------
+    void DebugRenderer::ClearPersistent()
+    {
+        m_persistent_vertices.clear();
     }
 
 } // namespace Toop
