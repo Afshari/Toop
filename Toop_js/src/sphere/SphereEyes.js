@@ -20,6 +20,8 @@ export class SphereEyes {
         this._leftEyeDir = new THREE.Vector3(-0.25, 0.15, 1.0).normalize()
         this._rightEyeDir = new THREE.Vector3(0.25, 0.15, 1.0).normalize()
 
+        this._lastOrientation = new THREE.Quaternion()
+
         this._eyes = this._createEyes()
     }
 
@@ -65,6 +67,7 @@ export class SphereEyes {
     update(center, orientation, raycasterContext, mouseNDC, camera) {
         const eyeR = this._radius * PARAMS.eye_radius_factor
         const eyeOffset = this._radius * PARAMS.eye_offset_factor
+        this._lastOrientation.copy(orientation)
 
         for (const eye of this._eyes) {
             // eye world position
@@ -105,6 +108,16 @@ export class SphereEyes {
     }
 
     getEyes() { return this._eyes }
+
+    getEyePlanes() {
+        return this._eyes.map(eye => ({
+            normal: new THREE.Vector3()
+                .copy(eye.dir)
+                .applyQuaternion(this._lastOrientation)
+                .normalize(),
+            point: eye.worldPos.clone()
+        }))
+    }
 
     dispose() {
         for (const eye of this._eyes) {

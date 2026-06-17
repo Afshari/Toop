@@ -10,6 +10,7 @@ import { RaycasterContext } from './ray/RaycasterContext.js'
 import Stats from 'stats.js'
 import GUI from 'lil-gui'
 import { inject } from '@vercel/analytics'
+import { DebugManager } from './debug/DebugManager.js'
 
 inject()
 
@@ -63,6 +64,61 @@ const threeRaycaster = new ThreeRaycaster()
 const raycasterContext = new RaycasterContext(customRaycaster)
 
 // ------------------------------------------------------------
+// Lighting
+// ------------------------------------------------------------
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.4)
+scene.add(ambientLight)
+
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.0)
+dirLight.position.set(5, 8, 5)
+dirLight.castShadow = true
+scene.add(dirLight)
+
+const fillLight = new THREE.DirectionalLight(0x334466, 0.3)
+fillLight.position.set(-5, 2, -5)
+scene.add(fillLight)
+
+// ------------------------------------------------------------
+// Sphere
+// ------------------------------------------------------------
+const sphere = new Sphere(scene, raycasterContext)
+threeRaycaster.setSphereMesh(sphere.mesh)
+
+// ------------------------------------------------------------
+// Debug
+// ------------------------------------------------------------
+const debugManager = new DebugManager(scene, sphere, raycasterContext)
+
+// ------------------------------------------------------------
+// Ground
+// ------------------------------------------------------------
+const groundGeo = new THREE.PlaneGeometry(20, 20)
+const groundMat = new THREE.MeshStandardMaterial({
+    color: 0x2a2018,
+    roughness: 0.8,
+})
+const ground = new THREE.Mesh(groundGeo, groundMat)
+ground.rotation.x = -Math.PI / 2
+ground.position.y = PARAMS.ground_y
+ground.receiveShadow = true
+scene.add(ground)
+
+const roomBox = new THREE.Box3(
+    new THREE.Vector3(...PARAMS.room_min),
+    new THREE.Vector3(...PARAMS.room_max)
+)
+const roomHelper = new THREE.Box3Helper(roomBox, 0x444444)
+scene.add(roomHelper)
+
+// ------------------------------------------------------------
+// Strand geometry
+// ------------------------------------------------------------
+const strandGeometry = new StrandGeometry()
+scene.add(strandGeometry.mesh)
+const simulation = new HairSimulation(renderer, strandGeometry)
+strandGeometry.connectSimulation(simulation.getPositionTexture())
+
+// ------------------------------------------------------------
 // Mouse
 // ------------------------------------------------------------
 const mouseNDC = new THREE.Vector2(0, 0)
@@ -71,10 +127,8 @@ window.addEventListener('mousemove', (e) => {
     mouseNDC.x = (e.clientX / window.innerWidth) * 2 - 1
     mouseNDC.y = -(e.clientY / window.innerHeight) * 2 + 1
 
-    const ray = raycasterContext.castRay(mouseNDC, camera)
-    sphere.debugUpdateRay(ray)
-
     if (sphere.isDragging) {
+        const ray = raycasterContext.castRay(mouseNDC, camera)
         sphere.handleDragMove(ray, camera)
     }
 })
@@ -166,64 +220,19 @@ window.addEventListener('keydown', (e) => {
             break
         case 'r':
         case 'R':
-            sphere.saveCurrentRay(raycasterContext.castRay(mouseNDC, camera))
+            debugManager.saveSnapshot(raycasterContext.castRay(mouseNDC, camera), camera)
             break
         case 'c':
         case 'C':
-            sphere.clearSavedRays()
+            debugManager.clearSnapshots()
+            break
+        case 'q':
+        case 'Q':
+            sphere.frozen = !sphere.frozen
+            freezeController.updateDisplay()
             break
     }
 })
-
-// ------------------------------------------------------------
-// Lighting
-// ------------------------------------------------------------
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.4)
-scene.add(ambientLight)
-
-const dirLight = new THREE.DirectionalLight(0xffffff, 1.0)
-dirLight.position.set(5, 8, 5)
-dirLight.castShadow = true
-scene.add(dirLight)
-
-const fillLight = new THREE.DirectionalLight(0x334466, 0.3)
-fillLight.position.set(-5, 2, -5)
-scene.add(fillLight)
-
-// ------------------------------------------------------------
-// Sphere
-// ------------------------------------------------------------
-const sphere = new Sphere(scene, raycasterContext)
-threeRaycaster.setSphereMesh(sphere.mesh)
-
-// ------------------------------------------------------------
-// Ground
-// ------------------------------------------------------------
-const groundGeo = new THREE.PlaneGeometry(20, 20)
-const groundMat = new THREE.MeshStandardMaterial({
-    color: 0x2a2018,
-    roughness: 0.8,
-})
-const ground = new THREE.Mesh(groundGeo, groundMat)
-ground.rotation.x = -Math.PI / 2
-ground.position.y = PARAMS.ground_y
-ground.receiveShadow = true
-scene.add(ground)
-
-const roomBox = new THREE.Box3(
-    new THREE.Vector3(...PARAMS.room_min),
-    new THREE.Vector3(...PARAMS.room_max)
-)
-const roomHelper = new THREE.Box3Helper(roomBox, 0x444444)
-scene.add(roomHelper)
-
-// ------------------------------------------------------------
-// Strand geometry
-// ------------------------------------------------------------
-const strandGeometry = new StrandGeometry()
-scene.add(strandGeometry.mesh)
-const simulation = new HairSimulation(renderer, strandGeometry)
-strandGeometry.connectSimulation(simulation.getPositionTexture())
 
 // ------------------------------------------------------------
 // GUI
@@ -249,22 +258,33 @@ const debugParams = {
     showAxes: true,
     showRay: true,
     showDragPlane: true,
+    showVelocity: true,
+    showSnapshots: true,
     useCustomRaycaster: true,
+    freezeSphere: false,
 }
 
 const debugFolder = gui.addFolder('Debug')
 debugFolder.add(debugParams, 'showAxes').name('Local Axes').onChange(v => {
-    sphere.axesHelper.visible = v
+    debugManager.setVisible('axes', v)
 })
 debugFolder.add(debugParams, 'showRay').name('Ray Line').onChange(v => {
-    sphere.rayLine.visible = v
-    sphere.rayHitMarker.visible = v
+    debugManager.setVisible('rayLine', v)
 })
 debugFolder.add(debugParams, 'showDragPlane').name('Drag Plane').onChange(v => {
-    sphere.dragPlaneMesh.visible = v
+    debugManager.setVisible('dragPlane', v)
+})
+debugFolder.add(debugParams, 'showVelocity').name('Velocity Arrow').onChange(v => {
+    debugManager.setVisible('velocity', v)
+})
+debugFolder.add(debugParams, 'showSnapshots').name('Snapshots').onChange(v => {
+    debugManager.setVisible('snapshots', v)
 })
 debugFolder.add(debugParams, 'useCustomRaycaster').name('Custom Raycaster').onChange(v => {
     raycasterContext.setStrategy(v ? customRaycaster : threeRaycaster)
+})
+const freezeController = debugFolder.add(debugParams, 'freezeSphere').name('Freeze Sphere').onChange(v => {
+    sphere.frozen = v
 })
 const orbitController = debugFolder.add(controls, 'enabled').name('Orbit Camera')
 
@@ -294,13 +314,17 @@ function animate() {
     sphere.update(dt)
     sphere.updateIdleTimer(dt)
 
-    if (!sphere.isDragging) {
+    if (!sphere.isDragging && !sphere.frozen) {
         sphere.updateOrientation(dt)
         sphere.rotateTowardCamera(camera.position)
         sphere.updateHeadTilt(mouseNDC)
     }
 
-    sphere.updateEyes(mouseNDC, camera)
+    if(!sphere.frozen)
+        sphere.updateEyes(mouseNDC, camera)
+
+    const ray = raycasterContext.castRay(mouseNDC, camera)
+    debugManager.update(ray, camera)
 
     simulation.update(
         dt,
