@@ -78,7 +78,6 @@ export class Sphere {
 
     handleDragEnd() {
         this.physics.handleDragEnd()
-        this.dragPlaneMesh.visible = false
     }
 
     // ------------------------------------------------------------

@@ -31,6 +31,12 @@ stats.showPanel(0)
 document.body.appendChild(stats.dom)
 
 // ------------------------------------------------------------
+// Help
+// ------------------------------------------------------------
+const helpOverlay = document.getElementById('help-overlay')
+helpOverlay.style.display = 'none'
+
+// ------------------------------------------------------------
 // Scene
 // ------------------------------------------------------------
 const scene = new THREE.Scene()
@@ -213,11 +219,6 @@ window.addEventListener('keydown', (e) => {
             ambientLight.intensity = Math.max(0.0, ambientLight.intensity - 0.1)
             dirLight.intensity = Math.max(0.0, dirLight.intensity - 0.1)
             break
-        case 'o':
-        case 'O':
-            controls.enabled = !controls.enabled
-            orbitController.updateDisplay()
-            break
         case 'r':
         case 'R':
             debugManager.saveSnapshot(raycasterContext.castRay(mouseNDC, camera), camera)
@@ -229,7 +230,47 @@ window.addEventListener('keydown', (e) => {
         case 'q':
         case 'Q':
             sphere.frozen = !sphere.frozen
+            debugParams.freezeSphere = sphere.frozen
             freezeController.updateDisplay()
+            break
+        case 'o':
+        case 'O':
+            controls.enabled = !controls.enabled
+            debugParams.orbitCamera = controls.enabled
+            orbitController.updateDisplay()
+            break
+        case 'h':
+        case 'H':
+            helpOverlay.style.display =
+                helpOverlay.style.display === 'none' ? 'block' : 'none'
+            break
+        case 'd':
+        case 'D':
+            debugFolder._closed ? debugFolder.open() : debugFolder.close()
+            break
+        case 'a':
+        case 'A':
+            debugParams.showAxes = !debugParams.showAxes
+            debugManager.setVisible('axes', debugParams.showAxes)
+            axesController.updateDisplay()
+            break
+        case 'x':
+        case 'X':
+            debugParams.showRay = !debugParams.showRay
+            debugManager.setVisible('rayLine', debugParams.showRay)
+            rayController.updateDisplay()
+            break
+        case 'z':
+        case 'Z':
+            debugParams.showDragPlane = !debugParams.showDragPlane
+            debugManager.setVisible('dragPlane', debugParams.showDragPlane)
+            planeController.updateDisplay()
+            break
+        case 'v':
+        case 'V':
+            debugParams.useCustomRaycaster = !debugParams.useCustomRaycaster
+            raycasterContext.setStrategy(debugParams.useCustomRaycaster ? customRaycaster : threeRaycaster)
+            raycasterController.updateDisplay()
             break
     }
 })
@@ -238,15 +279,16 @@ window.addEventListener('keydown', (e) => {
 // GUI
 // ------------------------------------------------------------
 const gui = new GUI()
-gui.close()
 
 const simFolder = gui.addFolder('Simulation')
+simFolder.close()
 simFolder.add(PARAMS, 'wind_strength', 0, 1, 0.01)
 simFolder.add(PARAMS, 'wind_frequency', 0, 2, 0.1)
 simFolder.add(PARAMS, 'damping', 0.98, 1.0, 0.001)
 simFolder.add(PARAMS, 'sphere_collision_compliance', 0, 0.01, 0.0001)
 
 const envFolder = gui.addFolder('Environment')
+envFolder.close()
 envFolder.addColor(PARAMS, 'hair_color').onChange(v => {
     strandGeometry.mesh.material.uniforms.uColor.value.set(v)
 })
@@ -255,38 +297,39 @@ envFolder.addColor(PARAMS, 'sphere_color').onChange(v => {
 })
 
 const debugParams = {
-    showAxes: true,
+    showAxes: false,
     showRay: true,
     showDragPlane: true,
-    showVelocity: true,
     showSnapshots: true,
     useCustomRaycaster: true,
     freezeSphere: false,
+    orbitCamera: true,
 }
 
 const debugFolder = gui.addFolder('Debug')
-debugFolder.add(debugParams, 'showAxes').name('Local Axes').onChange(v => {
+debugFolder.close()
+
+const axesController = debugFolder.add(debugParams, 'showAxes').name('Local Axes (A)').onChange(v => {
     debugManager.setVisible('axes', v)
 })
-debugFolder.add(debugParams, 'showRay').name('Ray Line').onChange(v => {
+const rayController = debugFolder.add(debugParams, 'showRay').name('Camera Ray (X)').onChange(v => {
     debugManager.setVisible('rayLine', v)
 })
-debugFolder.add(debugParams, 'showDragPlane').name('Drag Plane').onChange(v => {
+const planeController = debugFolder.add(debugParams, 'showDragPlane').name('Drag Plane (Z)').onChange(v => {
     debugManager.setVisible('dragPlane', v)
 })
-debugFolder.add(debugParams, 'showVelocity').name('Velocity Arrow').onChange(v => {
-    debugManager.setVisible('velocity', v)
-})
-debugFolder.add(debugParams, 'showSnapshots').name('Snapshots').onChange(v => {
+const snapshotsController = debugFolder.add(debugParams, 'showSnapshots').name('Snapshots (R/C)').onChange(v => {
     debugManager.setVisible('snapshots', v)
 })
-debugFolder.add(debugParams, 'useCustomRaycaster').name('Custom Raycaster').onChange(v => {
+const raycasterController = debugFolder.add(debugParams, 'useCustomRaycaster').name('Custom Raycaster (V)').onChange(v => {
     raycasterContext.setStrategy(v ? customRaycaster : threeRaycaster)
 })
-const freezeController = debugFolder.add(debugParams, 'freezeSphere').name('Freeze Sphere').onChange(v => {
+const freezeController = debugFolder.add(debugParams, 'freezeSphere').name('Freeze Sphere (Q)').onChange(v => {
     sphere.frozen = v
 })
-const orbitController = debugFolder.add(controls, 'enabled').name('Orbit Camera')
+const orbitController = debugFolder.add(debugParams, 'orbitCamera').name('Orbit Camera (O)').onChange(v => {
+    controls.enabled = v
+})
 
 // ------------------------------------------------------------
 // Resize
@@ -320,7 +363,7 @@ function animate() {
         sphere.updateHeadTilt(mouseNDC)
     }
 
-    if(!sphere.frozen)
+    if (!sphere.frozen)
         sphere.updateEyes(mouseNDC, camera)
 
     const ray = raycasterContext.castRay(mouseNDC, camera)

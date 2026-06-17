@@ -14,7 +14,7 @@ export class DebugManager {
         this._snapshotLines = []
 
         this._visible = {
-            axes: true,
+            axes: false,
             rayLine: true,
             dragPlane: true,
             velocity: true,
@@ -32,6 +32,7 @@ export class DebugManager {
     // ------------------------------------------------------------
     _initAxes() {
         this.axesHelper = new THREE.AxesHelper(this._sphere.radius * 2)
+        this.axesHelper.visible = this._visible.axes
         this._scene.add(this.axesHelper)
     }
 
@@ -142,38 +143,14 @@ export class DebugManager {
         const forward = new THREE.Vector3()
         camera.getWorldDirection(forward)
 
-        // find 3D mouse target point - try sphere first, fall back to front plane
-        let mouseTarget = null
-
-        const sphereHit = this._raycasterContext.intersectSphere(ray, center, this._sphere.radius)
-        if (sphereHit) {
-            mouseTarget = sphereHit.point
-        } else {
-            const frontPoint = center.clone().addScaledVector(forward, -this._sphere.radius)
-            const planeHit = this._raycasterContext.intersectPlane(ray, forward, frontPoint)
-            if (planeHit) mouseTarget = planeHit.point
-        }
-
-        if (!mouseTarget) return
-
-        const eyes = this._sphere.eyes.getEyes()
-        const leftEyeRay = this._buildEyeRay(eyes[0], mouseTarget)
-        const rightEyeRay = this._buildEyeRay(eyes[1], mouseTarget)
-
-        // get the actual planes the pupils use for tracking
         const eyePlanes = this._sphere.eyes.getEyePlanes()
-        // console.log('eyePlanes', eyePlanes)
-        // console.log('left normal', eyePlanes[0].normal)
-        // console.log('left point', eyePlanes[0].point)
 
+        const leftHit = this._raycasterContext.intersectPlane(ray, eyePlanes[0].normal, eyePlanes[0].point)
+        const rightHit = this._raycasterContext.intersectPlane(ray, eyePlanes[1].normal, eyePlanes[1].point)
 
-        const snapshot = new RaySnapshot(
-            ray,
-            leftEyeRay,
-            rightEyeRay,
-            eyePlanes[0],
-            eyePlanes[1]
-        )
+        if (!leftHit || !rightHit) return
+
+        const snapshot = new RaySnapshot(ray, leftHit.point, rightHit.point, eyePlanes[0], eyePlanes[1])
         this._snapshots.push(snapshot)
         this._drawSnapshot(snapshot)
     }
@@ -190,10 +167,17 @@ export class DebugManager {
         lines.push(this._makeLine(snapshot.cameraRay.origin, snapshot.cameraRay.dir, 0xff00ff))
 
         // left eye ray - orange
-        lines.push(this._makeLine(snapshot.leftEyeRay.origin, snapshot.leftEyeRay.dir, 0xff8800))
+        lines.push(this._makeMarker(snapshot.leftHitPoint, 0xff8800))
 
         // right eye ray - yellow
-        lines.push(this._makeLine(snapshot.rightEyeRay.origin, snapshot.rightEyeRay.dir, 0xffff00))
+        lines.push(this._makeMarker(snapshot.rightHitPoint, 0xffff00))
+
+        // add these:
+        const leftEyePos = this._sphere.eyes.getEyes()[0].worldPos
+        const rightEyePos = this._sphere.eyes.getEyes()[1].worldPos
+
+        lines.push(this._makeSegment(leftEyePos, snapshot.leftHitPoint, 0xff8800))
+        lines.push(this._makeSegment(rightEyePos, snapshot.rightHitPoint, 0xffff00))
 
         // left eye plane - orange tint
         if (snapshot.leftPlane) {
@@ -215,6 +199,16 @@ export class DebugManager {
         const line = new THREE.Line(geo, mat)
         this._scene.add(line)
         return line
+    }
+
+    _makeMarker(point, color) {
+        const mesh = new THREE.Mesh(
+            new THREE.SphereGeometry(0.03, 8, 8),
+            new THREE.MeshBasicMaterial({ color, depthTest: false })
+        )
+        mesh.position.copy(point)
+        this._scene.add(mesh)
+        return mesh
     }
 
     _makePlaneMesh(plane, color) {
@@ -239,6 +233,14 @@ export class DebugManager {
         mesh.quaternion.copy(q)
         this._scene.add(mesh)
         return mesh
+    }
+
+    _makeSegment(from, to, color) {
+        const geo = new THREE.BufferGeometry().setFromPoints([from.clone(), to.clone()])
+        const mat = new THREE.LineBasicMaterial({ color })
+        const line = new THREE.Line(geo, mat)
+        this._scene.add(line)
+        return line
     }
 
     clearSnapshots() {
