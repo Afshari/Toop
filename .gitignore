@@ -35,6 +35,9 @@ Release/
 out/
 reference/
 
+!Toop_js/src/debug/
+!Toop_js/src/debug/**
+
 # CMake
 CMakeFiles/
 CMakeCache.txt
