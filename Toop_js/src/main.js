@@ -304,6 +304,7 @@ simFolder.add(PARAMS, 'wind_strength', 0, 1, 0.01)
 simFolder.add(PARAMS, 'wind_frequency', 0, 2, 0.1)
 simFolder.add(PARAMS, 'damping', 0.98, 1.0, 0.001)
 simFolder.add(PARAMS, 'sphere_collision_compliance', 0, 0.01, 0.0001)
+simFolder.add(PARAMS, 'whip_strength', 0, 0.1, 0.001).name('Whip Strength')
 
 const envFolder = gui.addFolder('Environment')
 envFolder.close()

@@ -54,4 +54,6 @@ export const PARAMS = {
 
     hair_color: new THREE.Color(1.0, 0.5, 0.5),
     sphere_color: new THREE.Color(0.9, 0.15, 0.15),
+
+    whip_strength: 0.002,
 }
