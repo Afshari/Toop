@@ -19,9 +19,12 @@ export class DebugManager {
             dragPlane: true,
             velocity: true,
             snapshots: true,
+            orientationCube: true,
+            targetCube: true,
+            rollingCube: true,
         }
 
-        this._initAxes()
+        this._initOrientationHelpers()
         this._initRayLine()
         this._initDragPlane()
         this._initVelocityArrow()
@@ -30,10 +33,32 @@ export class DebugManager {
     // ------------------------------------------------------------
     // init helpers
     // ------------------------------------------------------------
-    _initAxes() {
+    _initOrientationHelpers() {
+        // local axes
         this.axesHelper = new THREE.AxesHelper(this._sphere.radius * 2)
-        this.axesHelper.visible = this._visible.axes
         this._scene.add(this.axesHelper)
+
+        // wireframe cube - current orientation
+        const cubeSize = this._sphere.radius * 2
+        this.orientationCube = new THREE.LineSegments(
+            new THREE.EdgesGeometry(new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize)),
+            new THREE.LineBasicMaterial({ color: 0x44aaff, transparent: true, opacity: 0.6 })
+        )
+        this._scene.add(this.orientationCube)
+
+        // wireframe cube - target orientation (where sphere is heading)
+        this.targetCube = new THREE.LineSegments(
+            new THREE.EdgesGeometry(new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize)),
+            new THREE.LineBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.4 })
+        )
+        this._scene.add(this.targetCube)
+
+        // wireframe cube - rolling orientation (pure physics)
+        this.rollingCube = new THREE.LineSegments(
+            new THREE.EdgesGeometry(new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize)),
+            new THREE.LineBasicMaterial({ color: 0x44ff44, transparent: true, opacity: 0.4 })
+        )
+        this._scene.add(this.rollingCube)
     }
 
     _initRayLine() {
@@ -89,9 +114,24 @@ export class DebugManager {
         const orientation = this._sphere.getOrientation()
         const velocity = this._sphere.physics.velocity
 
-        // axes
+        // current orientation - blue cube
         this.axesHelper.position.copy(center)
         this.axesHelper.quaternion.copy(orientation)
+
+        this.orientationCube.position.copy(center)
+        this.orientationCube.quaternion.copy(orientation)
+        this.orientationCube.visible = this._visible.orientationCube
+
+        this.rollingCube.position.copy(center)
+        this.rollingCube.quaternion.copy(this._sphere.character.rollingOrientation)
+        this.rollingCube.visible = this._visible.rollingCube
+
+        const targetQuat = this._sphere.character.getTargetQuat()
+        if (targetQuat) {
+            this.targetCube.position.copy(center)
+            this.targetCube.quaternion.copy(targetQuat)
+        }
+        this.targetCube.visible = this._visible.targetCube && !!targetQuat
 
         // live ray line
         const far = ray.origin.clone().addScaledVector(ray.dir, RAY_LENGTH)
@@ -160,6 +200,7 @@ export class DebugManager {
         const dir = targetPoint.clone().sub(origin).normalize()
         return { origin, dir }
     }
+
     _drawSnapshot(snapshot) {
         const lines = []
 
@@ -261,6 +302,15 @@ export class DebugManager {
         switch (name) {
             case 'axes':
                 this.axesHelper.visible = value
+                break
+            case 'orientationCube':
+                this.orientationCube.visible = value
+                break
+            case 'targetCube':
+                this.targetCube.visible = value
+                break
+            case 'rollingCube':
+                this.rollingCube.visible = value
                 break
             case 'rayLine':
                 this.rayLine.visible = value

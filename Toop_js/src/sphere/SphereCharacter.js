@@ -68,11 +68,11 @@ export class SphereCharacter {
     updateHeadTilt(mouseNDC) {
         if (!this.isIdle()) {
             this.sphereOrientation.slerp(this.rollingOrientation, 0.15)
+            this._lastTargetQuat = null
             return
         }
 
         const { max_tilt } = PARAMS
-
         const tiltX = -mouseNDC.y * max_tilt
         const tiltY = mouseNDC.x * max_tilt
 
@@ -85,8 +85,11 @@ export class SphereCharacter {
             .multiply(this._tiltX)
             .normalize()
 
+        this._lastTargetQuat = this._targetQuat  // store reference
+
         this.sphereOrientation.slerp(this._targetQuat, 0.5)
     }
 
+    getTargetQuat() { return this._lastTargetQuat || null }
     getOrientation() { return this.sphereOrientation }
 }

@@ -272,6 +272,24 @@ window.addEventListener('keydown', (e) => {
             raycasterContext.setStrategy(debugParams.useCustomRaycaster ? customRaycaster : threeRaycaster)
             raycasterController.updateDisplay()
             break
+        case 'y':
+        case 'Y':
+            debugParams.showOrientationCube = !debugParams.showOrientationCube
+            debugManager.setVisible('orientationCube', debugParams.showOrientationCube)
+            orientationCubeController.updateDisplay()
+            break
+        case 't':
+        case 'T':
+            debugParams.showTargetCube = !debugParams.showTargetCube
+            debugManager.setVisible('targetCube', debugParams.showTargetCube)
+            targetCubeController.updateDisplay()
+            break
+        case 'g':
+        case 'G':
+            debugParams.showRollingCube = !debugParams.showRollingCube
+            debugManager.setVisible('rollingCube', debugParams.showRollingCube)
+            rollingCubeController.updateDisplay()
+            break
     }
 })
 
@@ -304,6 +322,9 @@ const debugParams = {
     useCustomRaycaster: true,
     freezeSphere: false,
     orbitCamera: true,
+    showOrientationCube: true,
+    showTargetCube: true,
+    showRollingCube: true,
 }
 
 const debugFolder = gui.addFolder('Debug')
@@ -329,6 +350,15 @@ const freezeController = debugFolder.add(debugParams, 'freezeSphere').name('Free
 })
 const orbitController = debugFolder.add(debugParams, 'orbitCamera').name('Orbit Camera (O)').onChange(v => {
     controls.enabled = v
+})
+const orientationCubeController = debugFolder.add(debugParams, 'showOrientationCube').name('Current Orientation (Y)').onChange(v => {
+    debugManager.setVisible('orientationCube', v)
+})
+const targetCubeController = debugFolder.add(debugParams, 'showTargetCube').name('Target Orientation (T)').onChange(v => {
+    debugManager.setVisible('targetCube', v)
+})
+const rollingCubeController = debugFolder.add(debugParams, 'showRollingCube').name('Rolling Orientation (G)').onChange(v => {
+    debugManager.setVisible('rollingCube', v)
 })
 
 // ------------------------------------------------------------
