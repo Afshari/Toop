@@ -34,7 +34,8 @@ document.body.appendChild(stats.dom)
 // Help
 // ------------------------------------------------------------
 const helpOverlay = document.getElementById('help-overlay')
-helpOverlay.style.display = 'none'
+const helpContent = document.getElementById('help-content')
+helpContent.style.display = 'none'
 
 // ------------------------------------------------------------
 // Scene
@@ -205,9 +206,12 @@ window.addEventListener('keydown', (e) => {
         case '5': setCameraPreset(12.0); break
         case '6': setCameraPreset(18.0); break
         case 'f':
+        case 'f':
         case 'F':
-            stats.dom.style.display =
-                stats.dom.style.display === 'none' ? 'block' : 'none'
+            const hidden = stats.dom.style.display === 'none'
+            stats.dom.style.display = hidden ? 'block' : 'none'
+            gui.domElement.style.display = hidden ? 'block' : 'none'
+            helpOverlay.style.display = hidden ? 'block' : 'none'
             break
         case 'l':
         case 'L':
@@ -227,22 +231,10 @@ window.addEventListener('keydown', (e) => {
         case 'C':
             debugManager.clearSnapshots()
             break
-        case 'q':
-        case 'Q':
-            sphere.frozen = !sphere.frozen
-            debugParams.freezeSphere = sphere.frozen
-            freezeController.updateDisplay()
-            break
-        case 'o':
-        case 'O':
-            controls.enabled = !controls.enabled
-            debugParams.orbitCamera = controls.enabled
-            orbitController.updateDisplay()
-            break
         case 'h':
         case 'H':
-            helpOverlay.style.display =
-                helpOverlay.style.display === 'none' ? 'block' : 'none'
+            helpContent.style.display =
+                helpContent.style.display === 'none' ? 'block' : 'none'
             break
         case 'd':
         case 'D':
@@ -250,45 +242,50 @@ window.addEventListener('keydown', (e) => {
             break
         case 'a':
         case 'A':
-            debugParams.showAxes = !debugParams.showAxes
-            debugManager.setVisible('axes', debugParams.showAxes)
-            axesController.updateDisplay()
+            debugManager.setVisible('axes', !debugManager.isVisible('axes'))
+            axesController.setValue(debugManager.isVisible('axes'))
             break
         case 'x':
         case 'X':
-            debugParams.showRay = !debugParams.showRay
-            debugManager.setVisible('rayLine', debugParams.showRay)
-            rayController.updateDisplay()
+            debugManager.setVisible('rayLine', !debugManager.isVisible('rayLine'))
+            rayController.setValue(debugManager.isVisible('rayLine'))
             break
         case 'z':
         case 'Z':
-            debugParams.showDragPlane = !debugParams.showDragPlane
-            debugManager.setVisible('dragPlane', debugParams.showDragPlane)
-            planeController.updateDisplay()
-            break
-        case 'v':
-        case 'V':
-            debugParams.useCustomRaycaster = !debugParams.useCustomRaycaster
-            raycasterContext.setStrategy(debugParams.useCustomRaycaster ? customRaycaster : threeRaycaster)
-            raycasterController.updateDisplay()
+            debugManager.setVisible('dragPlane', !debugManager.isVisible('dragPlane'))
+            planeController.setValue(debugManager.isVisible('dragPlane'))
             break
         case 'y':
         case 'Y':
-            debugParams.showOrientationCube = !debugParams.showOrientationCube
-            debugManager.setVisible('orientationCube', debugParams.showOrientationCube)
-            orientationCubeController.updateDisplay()
+            debugManager.setVisible('orientationCube', !debugManager.isVisible('orientationCube'))
+            orientationCubeController.setValue(debugManager.isVisible('orientationCube'))
             break
         case 't':
         case 'T':
-            debugParams.showTargetCube = !debugParams.showTargetCube
-            debugManager.setVisible('targetCube', debugParams.showTargetCube)
-            targetCubeController.updateDisplay()
+            debugManager.setVisible('targetCube', !debugManager.isVisible('targetCube'))
+            targetCubeController.setValue(debugManager.isVisible('targetCube'))
             break
         case 'g':
         case 'G':
-            debugParams.showRollingCube = !debugParams.showRollingCube
-            debugManager.setVisible('rollingCube', debugParams.showRollingCube)
-            rollingCubeController.updateDisplay()
+            debugManager.setVisible('rollingCube', !debugManager.isVisible('rollingCube'))
+            rollingCubeController.setValue(debugManager.isVisible('rollingCube'))
+            break
+        case 'q':
+        case 'Q':
+            sphere.frozen = !sphere.frozen
+            freezeController.setValue(sphere.frozen)
+            break
+        case 'o':
+        case 'O':
+            controls.enabled = !controls.enabled
+            orbitController.setValue(controls.enabled)
+            break
+        case 'v':
+        case 'V':
+            raycasterState.value = !raycasterState.value
+            raycasterContext.setStrategy(raycasterState.value ? customRaycaster : threeRaycaster)
+            raycasterController.setValue(raycasterState.value)
+            raycasterController.updateDisplay()
             break
     }
 })
@@ -315,52 +312,54 @@ envFolder.addColor(PARAMS, 'sphere_color').onChange(v => {
     sphere.mesh.material.color.set(v)
 })
 
-const debugParams = {
-    showAxes: false,
-    showRay: true,
-    showDragPlane: true,
-    showSnapshots: true,
-    useCustomRaycaster: true,
-    freezeSphere: false,
-    orbitCamera: true,
-    showOrientationCube: true,
-    showTargetCube: true,
-    showRollingCube: true,
-}
 
 const debugFolder = gui.addFolder('Debug')
 debugFolder.close()
 
-const axesController = debugFolder.add(debugParams, 'showAxes').name('Local Axes (A)').onChange(v => {
-    debugManager.setVisible('axes', v)
-})
-const rayController = debugFolder.add(debugParams, 'showRay').name('Camera Ray (X)').onChange(v => {
-    debugManager.setVisible('rayLine', v)
-})
-const planeController = debugFolder.add(debugParams, 'showDragPlane').name('Drag Plane (Z)').onChange(v => {
-    debugManager.setVisible('dragPlane', v)
-})
-const snapshotsController = debugFolder.add(debugParams, 'showSnapshots').name('Snapshots (R/C)').onChange(v => {
-    debugManager.setVisible('snapshots', v)
-})
-const raycasterController = debugFolder.add(debugParams, 'useCustomRaycaster').name('Custom Raycaster (V)').onChange(v => {
-    raycasterContext.setStrategy(v ? customRaycaster : threeRaycaster)
-})
-const freezeController = debugFolder.add(debugParams, 'freezeSphere').name('Freeze Sphere (Q)').onChange(v => {
-    sphere.frozen = v
-})
-const orbitController = debugFolder.add(debugParams, 'orbitCamera').name('Orbit Camera (O)').onChange(v => {
-    controls.enabled = v
-})
-const orientationCubeController = debugFolder.add(debugParams, 'showOrientationCube').name('Current Orientation (Y)').onChange(v => {
-    debugManager.setVisible('orientationCube', v)
-})
-const targetCubeController = debugFolder.add(debugParams, 'showTargetCube').name('Target Orientation (T)').onChange(v => {
-    debugManager.setVisible('targetCube', v)
-})
-const rollingCubeController = debugFolder.add(debugParams, 'showRollingCube').name('Rolling Orientation (G)').onChange(v => {
-    debugManager.setVisible('rollingCube', v)
-})
+const axesController = debugFolder.add({ value: debugManager.isVisible('axes') }, 'value')
+    .name('Local Axes (A)')
+    .onChange(v => debugManager.setVisible('axes', v))
+
+const orientationCubeController = debugFolder.add({ value: debugManager.isVisible('orientationCube') }, 'value')
+    .name('Current Orientation (Y)')
+    .onChange(v => debugManager.setVisible('orientationCube', v))
+
+const targetCubeController = debugFolder.add({ value: debugManager.isVisible('targetCube') }, 'value')
+    .name('Target Orientation (T)')
+    .onChange(v => debugManager.setVisible('targetCube', v))
+
+const rollingCubeController = debugFolder.add({ value: debugManager.isVisible('rollingCube') }, 'value')
+    .name('Rolling Orientation (G)')
+    .onChange(v => debugManager.setVisible('rollingCube', v))
+
+const rayController = debugFolder.add({ value: debugManager.isVisible('rayLine') }, 'value')
+    .name('Camera Ray (X)')
+    .onChange(v => debugManager.setVisible('rayLine', v))
+
+const planeController = debugFolder.add({ value: debugManager.isVisible('dragPlane') }, 'value')
+    .name('Drag Plane (Z)')
+    .onChange(v => debugManager.setVisible('dragPlane', v))
+
+const snapshotsController = debugFolder.add({ value: debugManager.isVisible('snapshots') }, 'value')
+    .name('Snapshots (R/C)')
+    .onChange(v => debugManager.setVisible('snapshots', v))
+
+const freezeState = { value: sphere.frozen }
+const freezeController = debugFolder.add(freezeState, 'value')
+    .name('Freeze Sphere (Q)')
+    .onChange(v => { sphere.frozen = v })
+
+const orbitState = { value: controls.enabled }
+const orbitController = debugFolder.add(orbitState, 'value')
+    .name('Orbit Camera (O)')
+    .onChange(v => { controls.enabled = v })
+
+const raycasterState = { value: true }  // true = custom, false = three.js
+const raycasterController = debugFolder.add(raycasterState, 'value')
+    .name('Custom Raycaster (V)')
+    .onChange(v => {
+        raycasterContext.setStrategy(v ? customRaycaster : threeRaycaster)
+    })
 
 // ------------------------------------------------------------
 // Resize

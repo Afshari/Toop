@@ -15,13 +15,13 @@ export class DebugManager {
 
         this._visible = {
             axes: false,
-            rayLine: true,
-            dragPlane: true,
-            velocity: true,
-            snapshots: true,
-            orientationCube: true,
-            targetCube: true,
-            rollingCube: true,
+            rayLine: false,
+            dragPlane: false,
+            velocity: false,
+            snapshots: false,
+            orientationCube: false,
+            targetCube: false,
+            rollingCube: false,
         }
 
         this._initOrientationHelpers()
@@ -36,6 +36,7 @@ export class DebugManager {
     _initOrientationHelpers() {
         // local axes
         this.axesHelper = new THREE.AxesHelper(this._sphere.radius * 2)
+        this.axesHelper.visible = this._visible.axes
         this._scene.add(this.axesHelper)
 
         // wireframe cube - current orientation
@@ -44,6 +45,7 @@ export class DebugManager {
             new THREE.EdgesGeometry(new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize)),
             new THREE.LineBasicMaterial({ color: 0x44aaff, transparent: true, opacity: 0.6 })
         )
+        this.orientationCube.visible = this._visible.orientationCube
         this._scene.add(this.orientationCube)
 
         // wireframe cube - target orientation (where sphere is heading)
@@ -51,6 +53,7 @@ export class DebugManager {
             new THREE.EdgesGeometry(new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize)),
             new THREE.LineBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.4 })
         )
+        this.targetCube.visible = this._visible.targetCube
         this._scene.add(this.targetCube)
 
         // wireframe cube - rolling orientation (pure physics)
@@ -58,6 +61,7 @@ export class DebugManager {
             new THREE.EdgesGeometry(new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize)),
             new THREE.LineBasicMaterial({ color: 0x44ff44, transparent: true, opacity: 0.4 })
         )
+        this.rollingCube.visible = this._visible.rollingCube
         this._scene.add(this.rollingCube)
     }
 
@@ -325,6 +329,10 @@ export class DebugManager {
                 for (const obj of this._snapshotLines) obj.visible = value
                 break
         }
+    }
+
+    isVisible(name) {
+        return this._visible[name]
     }
 
     dispose() {

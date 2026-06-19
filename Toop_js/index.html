@@ -31,10 +31,21 @@
             font-size: 12px;
             padding: 12px 16px;
             border-radius: 6px;
-            display: none;
             pointer-events: none;
             line-height: 1.8;
             min-width: 220px;
+        }
+
+        .help-title {
+            color: #ffffff;
+            font-size: 13px;
+        }
+
+        #help-content {
+            display: none;
+            margin-top: 6px;
+            border-top: 1px solid #444;
+            padding-top: 6px;
         }
 
         .help-title {
@@ -75,28 +86,22 @@
 
     <div id="help-overlay">
         <div class="help-title">Help (H to toggle)</div>
+        <div id="help-content">
+            <div class="help-group">Camera</div>
+            <div class="help-row"><span class="help-key">1-6</span> Camera distance presets</div>
+            <div class="help-row"><span class="help-key">O</span> Toggle orbit controls</div>
 
-        <div class="help-group">Camera</div>
-        <div class="help-row"><span class="help-key">1-6</span> Camera distance presets</div>
-        <div class="help-row"><span class="help-key">O</span> Toggle orbit controls</div>
+            <div class="help-group">Debug</div>
+            <div class="help-row"><span class="help-key">D</span> Toggle debug panel</div>
+            <div class="help-row"><span class="help-key">F</span> Toggle UI visibility</div>
+            <div class="help-row"><span class="help-key">R</span> Save snapshot</div>
+            <div class="help-row"><span class="help-key">C</span> Clear snapshots</div>
+            <div class="help-row"><span class="help-key">Q</span> Freeze sphere</div>
 
-        <div class="help-group">Debug</div>
-        <div class="help-row"><span class="help-key">D</span> Toggle debug panel</div>
-        <div class="help-row"><span class="help-key">A</span> Toggle local axes</div>
-        <div class="help-row"><span class="help-key">X</span> Toggle camera ray</div>
-        <div class="help-row"><span class="help-key">Z</span> Toggle drag plane</div>
-        <div class="help-row"><span class="help-key">R</span> Save snapshot</div>
-        <div class="help-row"><span class="help-key">C</span> Clear snapshots</div>
-        <div class="help-row"><span class="help-key">V</span> Toggle raycaster</div>
-        <div class="help-row"><span class="help-key">Q</span> Freeze sphere</div>
-        <div class="help-row"><span class="help-key">O</span> Toggle orbit camera</div>
-        <div class="help-row"><span class="help-key">Y</span> Toggle current orientation</div>
-        <div class="help-row"><span class="help-key">T</span> Toggle target orientation</div>
-        <div class="help-row"><span class="help-key">G</span> Toggle rolling orientation</div>
-
-        <div class="help-group">Sphere</div>
-        <div class="help-row"><span class="help-key">K</span> Decrease brightness</div>
-        <div class="help-row"><span class="help-key">L</span> Increase brightness</div>
+            <div class="help-group">Sphere</div>
+            <div class="help-row"><span class="help-key">K</span> Decrease brightness</div>
+            <div class="help-row"><span class="help-key">L</span> Increase brightness</div>
+        </div>
     </div>
 </body>
 

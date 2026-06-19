@@ -35,7 +35,7 @@ export const PARAMS = {
     room_min: [-4.0, 0.0, -4.0],
     room_max: [4.0, 3.0, 4.0],
 
-    max_tilt: 0.15,
+    max_tilt: 0.30,
     tilt_strength: 0.05,
 
     idle_speed_threshold: 0.05,
