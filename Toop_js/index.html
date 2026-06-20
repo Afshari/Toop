@@ -33,7 +33,7 @@
             border-radius: 6px;
             pointer-events: none;
             line-height: 1.8;
-            min-width: 220px;
+            min-width: 270px;
         }
 
         .help-title {
@@ -78,6 +78,16 @@
             min-width: 24px;
             text-align: center;
         }
+
+        #help-status {
+            color: #ff4444;
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+
+        .status-row {
+            margin-bottom: 2px;
+        }
     </style>
 </head>
 
@@ -85,6 +95,7 @@
     <script type="module" src="/src/main.js"></script>
 
     <div id="help-overlay">
+        <div id="help-status"></div>
         <div class="help-title">Help (H to toggle)</div>
         <div id="help-content">
             <div class="help-group">Camera</div>

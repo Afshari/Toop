@@ -36,6 +36,7 @@ document.body.appendChild(stats.dom)
 const helpOverlay = document.getElementById('help-overlay')
 const helpContent = document.getElementById('help-content')
 helpContent.style.display = 'none'
+const helpStatus = document.getElementById('help-status')
 
 // ------------------------------------------------------------
 // Scene
@@ -197,6 +198,13 @@ function setCameraPreset(distance) {
     controls.update()
 }
 
+function updateStatusOverlay() {
+    let html = ''
+    if (!controls.enabled) html += '<div class="status-row">Orbit Camera Disabled (O to toggle)</div>'
+    if (sphere.frozen) html += '<div class="status-row">Sphere Frozen (Q to toggle)</div>'
+    helpStatus.innerHTML = html
+}
+
 window.addEventListener('keydown', (e) => {
     switch (e.key) {
         case '1': setCameraPreset(3.0); break
@@ -274,11 +282,13 @@ window.addEventListener('keydown', (e) => {
         case 'Q':
             sphere.frozen = !sphere.frozen
             freezeController.setValue(sphere.frozen)
+            updateStatusOverlay()
             break
         case 'o':
         case 'O':
             controls.enabled = !controls.enabled
             orbitController.setValue(controls.enabled)
+            updateStatusOverlay()
             break
         case 'v':
         case 'V':
