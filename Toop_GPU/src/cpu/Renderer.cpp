@@ -319,7 +319,7 @@ namespace Toop {
 
         RenderGround(view, proj);
         RenderRoom(view, proj);
-        RenderSphere(view, proj, sphere_pos, sphere_radius);
+        RenderSphere(view, proj, sphere_pos, sphere_orientation, sphere_radius);
         RenderEyes(view, proj, sphere_pos, sphere_orientation,
             sphere_radius, bald_patches,
             mouse_ray_origin, mouse_ray_dir, camera_forward, frozen);
@@ -348,9 +348,11 @@ namespace Toop {
         const glm::mat4& view,
         const glm::mat4& proj,
         const glm::vec3& pos,
+        const glm::quat& orientation,
         float            /*radius*/)
     {
-        glm::mat4 model = glm::translate(glm::mat4(1.0f), pos);
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), pos)
+            * glm::mat4_cast(orientation);
 
         m_sphere_shader->Bind();
         m_sphere_shader->SetMat4("uModel", glm::value_ptr(model));

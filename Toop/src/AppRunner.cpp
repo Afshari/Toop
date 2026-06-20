@@ -175,15 +175,15 @@ namespace Toop {
                 mouse_ray, eye_center,
                 camera.GetForward(), tilt_mouse_world);
 
-            //sphere.UpdateHeadTilt(
-            //    tilt_mouse_world.x, tilt_mouse_world.y, tilt_mouse_world.z,
-            //    camera.GetRight().x, camera.GetRight().y, camera.GetRight().z,
-            //    camera.GetUp().x, camera.GetUp().y, camera.GetUp().z);
+            sphere.UpdateHeadTilt(
+                tilt_mouse_world.x, tilt_mouse_world.y, tilt_mouse_world.z,
+                camera.GetRight().x, camera.GetRight().y, camera.GetRight().z,
+                camera.GetUp().x, camera.GetUp().y, camera.GetUp().z);
 
             sim.SetSphereState(
                 sphere.GetPosX(), sphere.GetPosY(), sphere.GetPosZ(),
-                sphere.GetQuatX(), sphere.GetQuatY(), sphere.GetQuatZ(),
-                sphere.GetQuatW());
+                sphere.GetVisualQuatX(), sphere.GetVisualQuatY(),
+                sphere.GetVisualQuatZ(), sphere.GetVisualQuatW());
 
             sim_time += dt;
 

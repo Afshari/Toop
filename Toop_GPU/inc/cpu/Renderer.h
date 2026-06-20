@@ -53,7 +53,7 @@ namespace Toop {
 
         void RenderHair(const glm::mat4& view, const glm::mat4& proj);
         void RenderSphere(const glm::mat4& view, const glm::mat4& proj,
-            const glm::vec3& pos, float radius);
+            const glm::vec3& pos, const glm::quat& orientation, float radius);
         void RenderRoom(const glm::mat4& view, const glm::mat4& proj);
         void RenderGround(const glm::mat4& view, const glm::mat4& proj);
 
