@@ -19,11 +19,12 @@ namespace Toop {
             const glm::mat4& proj,
             const glm::vec3& sphere_pos,
             const glm::quat& sphere_orientation,
-            float sphere_radius,
+            float            sphere_radius,
             const BaldPatchConfig& bald_patches,
             const glm::vec3& mouse_ray_origin,
             const glm::vec3& mouse_ray_dir,
-            const glm::vec3& camera_forward);
+            const glm::vec3& camera_forward,
+            bool             frozen);
         void Shutdown();
 
         float* GetInteropPtr() const { return m_interop_ptr; }
@@ -32,6 +33,12 @@ namespace Toop {
 
         bool IsInitialized() const { return m_initialized; }
         glm::vec3 GetEyeWorldPos(
+            int                    eye_index,
+            const glm::vec3& sphere_pos,
+            const glm::quat& sphere_orientation,
+            float                  sphere_radius,
+            const BaldPatchConfig& bald_patches) const;
+        glm::vec3 GetEyeOutwardNormal(
             int                    eye_index,
             const glm::vec3& sphere_pos,
             const glm::quat& sphere_orientation,
@@ -59,7 +66,8 @@ namespace Toop {
             const BaldPatchConfig& bald_patches,
             const glm::vec3& mouse_ray_origin,
             const glm::vec3& mouse_ray_dir,
-            const glm::vec3& camera_forward);
+            const glm::vec3& camera_forward,
+            bool  frozen);
 
         void MapInteropBuffer();
         void UnmapInteropBuffer();

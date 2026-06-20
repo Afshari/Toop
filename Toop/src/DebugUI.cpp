@@ -43,7 +43,7 @@ namespace Toop {
     }
 
     // --------------------------------------------------------------------------------
-    void DebugUI::Render(DebugUIState& state)
+    void DebugUI::Render(DebugUIState& state, DebugContext& debug_context)
     {
         ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
         ImGui::SetNextWindowSize(ImVec2(280, 0), ImGuiCond_Always);
@@ -80,10 +80,13 @@ namespace Toop {
         // debug overlays
         if (ImGui::CollapsingHeader("Debug Overlays"))
         {
-            ImGui::Checkbox("Show rays", &state.show_debug_rays);
-            ImGui::Checkbox("Show drag plane", &state.show_drag_plane);
-            ImGui::Checkbox("Show velocity", &state.show_velocity);
-            ImGui::Checkbox("Show light", &state.show_light);
+            ImGui::Checkbox("Camera ray", &debug_context.show_camera_ray);
+            ImGui::Checkbox("Eye planes", &debug_context.show_eye_planes);
+            ImGui::Checkbox("Drag plane", &debug_context.show_drag_plane);
+            ImGui::Checkbox("Orientation cubes", &debug_context.show_orientation_cubes);
+            ImGui::Checkbox("Local axes", &debug_context.show_local_axes);
+            ImGui::Checkbox("Freeze character", &debug_context.frozen);
+            ImGui::Text("Snapshots: %d", (int)debug_context.snapshots.size());
         }
 
         ImGui::End();

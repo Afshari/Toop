@@ -147,13 +147,17 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="src\AppRunner.cpp" />
+    <ClCompile Include="src\DebugManager.cpp" />
     <ClCompile Include="src\DebugUI.cpp" />
     <ClCompile Include="src\InputHandler.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inc\AppRunner.h" />
+    <ClInclude Include="inc\DebugContext.h" />
+    <ClInclude Include="inc\DebugManager.h" />
     <ClInclude Include="inc\DebugUI.h" />
     <ClInclude Include="inc\InputHandler.h" />
+    <ClInclude Include="inc\RaySnapshot.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

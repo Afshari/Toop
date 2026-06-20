@@ -6,6 +6,7 @@
 #include <imgui_impl_opengl3.h>
 #include <GLFW/glfw3.h>
 #include "Config.h"
+#include "DebugContext.h"
 
 namespace Toop {
 
@@ -14,10 +15,6 @@ namespace Toop {
         // simulation toggles
         bool freeze_sim = false;
         bool show_hair = true;
-        bool show_debug_rays = false;
-        bool show_drag_plane = false;
-        bool show_velocity = false;
-        bool show_light = false;
 
         // tunable params - mirror config values
         float compliance = 0.0f;
@@ -40,7 +37,7 @@ namespace Toop {
         void Shutdown();
 
         void BeginFrame();
-        void Render(DebugUIState& state);
+        void Render(DebugUIState& state, DebugContext& debug_context);
         void EndFrame();
 
         bool IsInitialized() const { return m_initialized; }

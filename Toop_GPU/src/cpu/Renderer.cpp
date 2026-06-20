@@ -308,11 +308,12 @@ namespace Toop {
         const glm::mat4& proj,
         const glm::vec3& sphere_pos,
         const glm::quat& sphere_orientation,
-        float            sphere_radius,
+        float sphere_radius,
         const BaldPatchConfig& bald_patches,
         const glm::vec3& mouse_ray_origin,
         const glm::vec3& mouse_ray_dir,
-        const glm::vec3& camera_forward)
+        const glm::vec3& camera_forward,
+        bool  frozen)
     {
         if (!m_initialized) return;
 
@@ -321,7 +322,7 @@ namespace Toop {
         RenderSphere(view, proj, sphere_pos, sphere_radius);
         RenderEyes(view, proj, sphere_pos, sphere_orientation,
             sphere_radius, bald_patches,
-            mouse_ray_origin, mouse_ray_dir, camera_forward);
+            mouse_ray_origin, mouse_ray_dir, camera_forward, frozen);
         RenderHair(view, proj);
     }
 
@@ -404,11 +405,12 @@ namespace Toop {
         const glm::mat4& proj,
         const glm::vec3& sphere_pos,
         const glm::quat& sphere_orientation,
-        float            sphere_radius,
+        float sphere_radius,
         const BaldPatchConfig& bald_patches,
         const glm::vec3& mouse_ray_origin,
         const glm::vec3& mouse_ray_dir,
-        const glm::vec3& camera_forward)
+        const glm::vec3& camera_forward,
+        bool  frozen)
     {
         float eye_radius = sphere_radius * 0.18f;
         float pupil_radius = eye_radius * 0.6f;
@@ -456,16 +458,19 @@ namespace Toop {
                 camera_forward,
                 eye_mouse_world);
 
-            // pupil tracking
-            glm::vec3 to_mouse = eye_mouse_world - eye_world;
-            float     max_offset = eye_radius * 0.25f;
+            glm::vec3 projected(0.0f);
 
-            glm::vec3 projected = to_mouse
-                - glm::dot(to_mouse, eye_forward) * eye_forward;
+            if (!frozen)
+            {
+                glm::vec3 to_mouse = eye_mouse_world - eye_world;
+                float     max_offset = eye_radius * 0.25f;
 
-            float proj_len = glm::length(projected);
-            if (proj_len > max_offset)
-                projected = projected / proj_len * max_offset;
+                projected = to_mouse - glm::dot(to_mouse, eye_forward) * eye_forward;
+
+                float proj_len = glm::length(projected);
+                if (proj_len > max_offset)
+                    projected = projected / proj_len * max_offset;
+            }
 
             glm::vec3 pupil_world = eye_world
                 + eye_forward * eye_radius * 0.5f
@@ -538,6 +543,21 @@ namespace Toop {
 
         glm::vec3 eye_local = eye_dirs[eye_index] * sphere_radius * 0.85f;
         return sphere_pos + QuatRotate(sphere_orientation, eye_local);
+    }
+
+    // --------------------------------------------------------------------------------
+    glm::vec3 Renderer::GetEyeOutwardNormal(
+        int                    eye_index,
+        const glm::vec3& sphere_pos,
+        const glm::quat& sphere_orientation,
+        float                  sphere_radius,
+        const BaldPatchConfig& bald_patches) const
+    {
+        glm::vec3 eye_world = GetEyeWorldPos(
+            eye_index, sphere_pos, sphere_orientation,
+            sphere_radius, bald_patches);
+
+        return glm::normalize(eye_world - sphere_pos);
     }
 
 } // namespace Toop

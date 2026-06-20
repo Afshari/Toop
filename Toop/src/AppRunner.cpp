@@ -20,6 +20,7 @@
 
 #ifdef TOOP_DEBUG
 #include "DebugUI.h"
+#include "DebugManager.h"
 #endif
 
 namespace Toop {
@@ -85,10 +86,10 @@ namespace Toop {
 
         InputHandler input;
 #ifdef TOOP_DEBUG
-        DebugRenderer debug_renderer;
-        debug_renderer.Init();
+        DebugManager debug_manager;
+        debug_manager.Init();
 
-        input.Init(&window, &camera, &sphere, &config, &debug_renderer, &renderer);
+        input.Init(&window, &camera, &sphere, &config, &debug_manager, &renderer);
 #else
         input.Init(&window, &camera, &sphere, &config);
 #endif
@@ -138,59 +139,22 @@ namespace Toop {
             window.BeginFrame();
 
             // --- update ---
-            sphere.Update(dt);
 #ifdef TOOP_DEBUG
-            // mouse ray
-            if (debug_state.show_debug_rays)
-            {
-                const auto& mouse = window.GetMouseState();
-                Ray ray = RayUtils::ScreenToRay(
-                    mouse.x, mouse.y,
-                    window.GetWidth(), window.GetHeight(),
-                    view, proj);
-                debug_renderer.AddRay(ray.origin, ray.direction, 10.0f, glm::vec3(1.0f, 1.0f, 0.0f));
-            }
-
-            // drag plane
-            if (debug_state.show_drag_plane && input.IsDragging())
-            {
-                debug_renderer.AddPlane(
-                    input.GetDragPlaneCenter(),
-                    camera.GetForward(),
-                    2.0f, glm::vec3(0.0f, 1.0f, 1.0f)); // cyan
-            }
-
-            // sphere velocity arrow
-            if (debug_state.show_velocity)
-            {
-                debug_renderer.AddArrow(
-                    glm::vec3(sphere.GetPosX(),
-                        sphere.GetPosY(),
-                        sphere.GetPosZ()),
-                    glm::vec3(sphere.GetDeltaX(),
-                        sphere.GetDeltaY(),
-                        sphere.GetDeltaZ()),
-                    10.0f,
-                    glm::vec3(1.0f, 0.0f, 0.0f)); // red
-            }
-
-            // light direction
-            if (debug_state.show_light)
-            {
-                debug_renderer.AddArrow(
-                    glm::vec3(sphere.GetPosX(),
-                        sphere.GetPosY() + 2.0f,
-                        sphere.GetPosZ()),
-                    glm::vec3(1.0f, 2.0f, 1.0f),
-                    1.0f,
-                    glm::vec3(1.0f, 1.0f, 0.5f)); // warm yellow
-            }
+            if (!debug_manager.GetContext().frozen)
 #endif
+            {
+                sphere.Update(dt);
+            }
+
             Ray mouse_ray = RayUtils::ScreenToRay(
                 window.GetMouseState().x,
                 window.GetMouseState().y,
                 window.GetWidth(), window.GetHeight(),
                 view, proj);
+
+#ifdef TOOP_DEBUG
+            debug_manager.Sync(mouse_ray, camera, sphere, renderer, input, config);
+#endif
 
             glm::vec3 eye_left = renderer.GetEyeWorldPos(0,
                 glm::vec3(sphere.GetPosX(), sphere.GetPosY(), sphere.GetPosZ()),
@@ -270,11 +234,17 @@ namespace Toop {
                 config.bald_patches,
                 mouse_ray.origin,
                 mouse_ray.direction,
-                camera.GetForward());
+                camera.GetForward()
+#ifdef TOOP_DEBUG
+                , debug_manager.GetContext().frozen
+#else
+                , false
+#endif
+            );
 
 #ifdef TOOP_DEBUG
-            debug_renderer.Render(view, proj);
-            debug_ui.Render(debug_state);
+            debug_manager.Draw(view, proj);
+            debug_ui.Render(debug_state, debug_manager.GetContext());
             debug_ui.EndFrame();
 #endif
 
@@ -282,7 +252,7 @@ namespace Toop {
         }
 
 #ifdef TOOP_DEBUG
-        debug_renderer.Shutdown();
+        debug_manager.Shutdown();
         debug_ui.Shutdown();
 #endif
 

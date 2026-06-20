@@ -10,7 +10,7 @@
 #include "cpu/Window.h"
 
 #ifdef TOOP_DEBUG
-#include "cpu/DebugRenderer.h"
+#include "DebugManager.h"
 #include "cpu/Renderer.h"
 #endif
 
@@ -25,7 +25,7 @@ namespace Toop {
             SpherePhysics* sphere,
             const Config* config
 #ifdef TOOP_DEBUG
-            , DebugRenderer* debug_renderer = nullptr
+            , DebugManager* debug_manager = nullptr
             , Renderer* renderer = nullptr
 #endif
         );
@@ -60,7 +60,7 @@ namespace Toop {
         Ray       m_last_ray = {};
 
 #ifdef TOOP_DEBUG
-        DebugRenderer* m_debug_renderer = nullptr;
+        DebugManager* m_debug_manager = nullptr;
         Renderer* m_renderer = nullptr;
 #endif
     };
