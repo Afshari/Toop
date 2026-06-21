@@ -3,14 +3,16 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { PARAMS } from './config.js'
 import { StrandGeometry } from './StrandGeometry.js'
 import { HairSimulation } from './HairSimulation.js'
-import { Sphere } from './Sphere.js'
+import { Sphere } from './sphere/Sphere.js'
+import { CustomRaycaster } from './ray/CustomRaycaster.js'
+import { ThreeRaycaster } from './ray/ThreeRaycaster.js'
+import { RaycasterContext } from './ray/RaycasterContext.js'
 import Stats from 'stats.js'
 import GUI from 'lil-gui'
-import { inject } from '@vercel/analytics';
+import { inject } from '@vercel/analytics'
+import { DebugManager } from './debug/DebugManager.js'
 
-inject();
-
-const clock = new THREE.Clock()
+inject()
 
 // ------------------------------------------------------------
 // Renderer
@@ -27,6 +29,14 @@ document.body.appendChild(renderer.domElement)
 const stats = new Stats()
 stats.showPanel(0)
 document.body.appendChild(stats.dom)
+
+// ------------------------------------------------------------
+// Help
+// ------------------------------------------------------------
+const helpOverlay = document.getElementById('help-overlay')
+const helpContent = document.getElementById('help-content')
+helpContent.style.display = 'none'
+const helpStatus = document.getElementById('help-status')
 
 // ------------------------------------------------------------
 // Scene
@@ -55,106 +65,11 @@ controls.dampingFactor = 0.05
 controls.target.set(0, 1.0, 0)
 
 // ------------------------------------------------------------
-// Mouse
+// Raycaster
 // ------------------------------------------------------------
-const mouseNDC = new THREE.Vector2(0, 0)
-window.addEventListener('mousemove', (e) => {
-    mouseNDC.x = (e.clientX / window.innerWidth) * 2 - 1
-    mouseNDC.y = -(e.clientY / window.innerHeight) * 2 + 1
-
-    if (sphere.isDragging) {
-        dragRaycaster.setFromCamera(mouseNDC, camera)
-        sphere.handleDragMove(dragRaycaster, camera, 1 / 60)
-    }
-})
-
-const dragRaycaster = new THREE.Raycaster()
-
-window.addEventListener('mousedown', (e) => {
-    dragRaycaster.setFromCamera(mouseNDC, camera)
-    const grabbed = sphere.handleDragStart(dragRaycaster)
-    if (grabbed) controls.enabled = false
-})
-
-window.addEventListener('mouseup', () => {
-    if (sphere.isDragging) {
-        sphere.handleDragEnd()
-        controls.enabled = true
-    }
-})
-
-// ------------------------------------------------------------
-// Keyboard
-// ------------------------------------------------------------
-function setCameraPreset(distance) {
-    const spherePos = sphere.getCenter()
-    const dir = camera.position.clone().sub(spherePos).normalize()
-    camera.position.copy(spherePos).addScaledVector(dir, distance)
-    controls.target.copy(spherePos)
-    controls.update()
-}
-
-window.addEventListener('keydown', (e) => {
-    switch (e.key) {
-        case '1': setCameraPreset(3.0); break
-        case '2': setCameraPreset(4.0); break
-        case '3': setCameraPreset(6.0); break
-        case '4': setCameraPreset(8.0); break
-        case '5': setCameraPreset(12.0); break
-        case '6': setCameraPreset(18.0); break
-        case 'f':
-        case 'F':
-            stats.dom.style.display =
-                stats.dom.style.display === 'none' ? 'block' : 'none'
-            break
-        case 'l':
-        case 'L':
-            ambientLight.intensity = Math.min(3.0, ambientLight.intensity + 0.1)
-            dirLight.intensity = Math.min(4.0, dirLight.intensity + 0.1)
-            break
-        case 'k':
-        case 'K':
-            ambientLight.intensity = Math.max(0.0, ambientLight.intensity - 0.1)
-            dirLight.intensity = Math.max(0.0, dirLight.intensity - 0.1)
-            break
-    }
-})
-
-
-// ------------------------------------------------------------
-// Touch
-// ------------------------------------------------------------
-window.addEventListener('touchstart', (e) => {
-    const touch = e.touches[0]
-    mouseNDC.x = (touch.clientX / window.innerWidth) * 2 - 1
-    mouseNDC.y = -(touch.clientY / window.innerHeight) * 2 + 1
-    dragRaycaster.setFromCamera(mouseNDC, camera)
-    const grabbed = sphere.handleDragStart(dragRaycaster)
-    if (grabbed) controls.enabled = false
-    e.preventDefault()
-}, { passive: false })
-
-window.addEventListener('touchmove', (e) => {
-    const touch = e.touches[0]
-    mouseNDC.x = (touch.clientX / window.innerWidth) * 2 - 1
-    mouseNDC.y = -(touch.clientY / window.innerHeight) * 2 + 1
-    if (sphere.isDragging) {
-        dragRaycaster.setFromCamera(mouseNDC, camera)
-        sphere.handleDragMove(dragRaycaster, camera, 1 / 60)
-    }
-    e.preventDefault()
-}, { passive: false })
-
-window.addEventListener('touchend', () => {
-    const sphereNDC = sphere.getCenter().clone().project(camera)
-    mouseNDC.set(sphereNDC.x, sphereNDC.y)
-
-    if (sphere.isDragging) {
-        sphere.handleDragEnd()
-        controls.enabled = true
-    }
-    // mouseNDC.set(0, 0)
-})
+const customRaycaster = new CustomRaycaster()
+const threeRaycaster = new ThreeRaycaster()
+const raycasterContext = new RaycasterContext(customRaycaster)
 
 // ------------------------------------------------------------
 // Lighting
@@ -174,7 +89,13 @@ scene.add(fillLight)
 // ------------------------------------------------------------
 // Sphere
 // ------------------------------------------------------------
-const sphere = new Sphere(scene)
+const sphere = new Sphere(scene, raycasterContext)
+threeRaycaster.setSphereMesh(sphere.mesh)
+
+// ------------------------------------------------------------
+// Debug
+// ------------------------------------------------------------
+const debugManager = new DebugManager(scene, sphere, raycasterContext)
 
 // ------------------------------------------------------------
 // Ground
@@ -205,21 +126,195 @@ scene.add(strandGeometry.mesh)
 const simulation = new HairSimulation(renderer, strandGeometry)
 strandGeometry.connectSimulation(simulation.getPositionTexture())
 
+// ------------------------------------------------------------
+// Mouse
+// ------------------------------------------------------------
+const mouseNDC = new THREE.Vector2(0, 0)
+
+window.addEventListener('mousemove', (e) => {
+    mouseNDC.x = (e.clientX / window.innerWidth) * 2 - 1
+    mouseNDC.y = -(e.clientY / window.innerHeight) * 2 + 1
+
+    if (sphere.isDragging) {
+        const ray = raycasterContext.castRay(mouseNDC, camera)
+        sphere.handleDragMove(ray, camera)
+    }
+})
+
+window.addEventListener('mousedown', () => {
+    const ray = raycasterContext.castRay(mouseNDC, camera)
+    const grabbed = sphere.handleDragStart(ray)
+    if (grabbed) controls.enabled = false
+})
+
+window.addEventListener('mouseup', () => {
+    if (sphere.isDragging) {
+        sphere.handleDragEnd()
+        controls.enabled = true
+    }
+})
+
+// ------------------------------------------------------------
+// Touch
+// ------------------------------------------------------------
+window.addEventListener('touchstart', (e) => {
+    const touch = e.touches[0]
+    mouseNDC.x = (touch.clientX / window.innerWidth) * 2 - 1
+    mouseNDC.y = -(touch.clientY / window.innerHeight) * 2 + 1
+    const ray = raycasterContext.castRay(mouseNDC, camera)
+    const grabbed = sphere.handleDragStart(ray)
+    if (grabbed) controls.enabled = false
+    e.preventDefault()
+}, { passive: false })
+
+window.addEventListener('touchmove', (e) => {
+    const touch = e.touches[0]
+    mouseNDC.x = (touch.clientX / window.innerWidth) * 2 - 1
+    mouseNDC.y = -(touch.clientY / window.innerHeight) * 2 + 1
+    if (sphere.isDragging) {
+        const ray = raycasterContext.castRay(mouseNDC, camera)
+        sphere.handleDragMove(ray, camera)
+    }
+    e.preventDefault()
+}, { passive: false })
+
+window.addEventListener('touchend', () => {
+    const sphereNDC = sphere.getCenter().clone().project(camera)
+    mouseNDC.set(sphereNDC.x, sphereNDC.y)
+    if (sphere.isDragging) {
+        sphere.handleDragEnd()
+        controls.enabled = true
+    }
+})
+
+// ------------------------------------------------------------
+// Keyboard
+// ------------------------------------------------------------
+function setCameraPreset(distance) {
+    const spherePos = sphere.getCenter()
+    const dir = camera.position.clone().sub(spherePos).normalize()
+    camera.position.copy(spherePos).addScaledVector(dir, distance)
+    controls.target.copy(spherePos)
+    controls.update()
+}
+
+function updateStatusOverlay() {
+    let html = ''
+    if (!controls.enabled) html += '<div class="status-row">Orbit Camera Disabled (O to toggle)</div>'
+    if (sphere.frozen) html += '<div class="status-row">Sphere Frozen (Q to toggle)</div>'
+    helpStatus.innerHTML = html
+}
+
+window.addEventListener('keydown', (e) => {
+    switch (e.key) {
+        case '1': setCameraPreset(3.0); break
+        case '2': setCameraPreset(4.0); break
+        case '3': setCameraPreset(6.0); break
+        case '4': setCameraPreset(8.0); break
+        case '5': setCameraPreset(12.0); break
+        case '6': setCameraPreset(18.0); break
+        case 'f':
+        case 'f':
+        case 'F':
+            const hidden = stats.dom.style.display === 'none'
+            stats.dom.style.display = hidden ? 'block' : 'none'
+            gui.domElement.style.display = hidden ? 'block' : 'none'
+            helpOverlay.style.display = hidden ? 'block' : 'none'
+            break
+        case 'l':
+        case 'L':
+            ambientLight.intensity = Math.min(3.0, ambientLight.intensity + 0.1)
+            dirLight.intensity = Math.min(4.0, dirLight.intensity + 0.1)
+            break
+        case 'k':
+        case 'K':
+            ambientLight.intensity = Math.max(0.0, ambientLight.intensity - 0.1)
+            dirLight.intensity = Math.max(0.0, dirLight.intensity - 0.1)
+            break
+        case 'r':
+        case 'R':
+            debugManager.saveSnapshot(raycasterContext.castRay(mouseNDC, camera), camera)
+            break
+        case 'c':
+        case 'C':
+            debugManager.clearSnapshots()
+            break
+        case 'h':
+        case 'H':
+            helpContent.style.display =
+                helpContent.style.display === 'none' ? 'block' : 'none'
+            break
+        case 'd':
+        case 'D':
+            debugFolder._closed ? debugFolder.open() : debugFolder.close()
+            break
+        case 'a':
+        case 'A':
+            debugManager.setVisible('axes', !debugManager.isVisible('axes'))
+            axesController.setValue(debugManager.isVisible('axes'))
+            break
+        case 'x':
+        case 'X':
+            debugManager.setVisible('rayLine', !debugManager.isVisible('rayLine'))
+            rayController.setValue(debugManager.isVisible('rayLine'))
+            break
+        case 'z':
+        case 'Z':
+            debugManager.setVisible('dragPlane', !debugManager.isVisible('dragPlane'))
+            planeController.setValue(debugManager.isVisible('dragPlane'))
+            break
+        case 'y':
+        case 'Y':
+            debugManager.setVisible('orientationCube', !debugManager.isVisible('orientationCube'))
+            orientationCubeController.setValue(debugManager.isVisible('orientationCube'))
+            break
+        case 't':
+        case 'T':
+            debugManager.setVisible('targetCube', !debugManager.isVisible('targetCube'))
+            targetCubeController.setValue(debugManager.isVisible('targetCube'))
+            break
+        case 'g':
+        case 'G':
+            debugManager.setVisible('rollingCube', !debugManager.isVisible('rollingCube'))
+            rollingCubeController.setValue(debugManager.isVisible('rollingCube'))
+            break
+        case 'q':
+        case 'Q':
+            sphere.frozen = !sphere.frozen
+            freezeController.setValue(sphere.frozen)
+            updateStatusOverlay()
+            break
+        case 'o':
+        case 'O':
+            controls.enabled = !controls.enabled
+            orbitController.setValue(controls.enabled)
+            updateStatusOverlay()
+            break
+        case 'v':
+        case 'V':
+            raycasterState.value = !raycasterState.value
+            raycasterContext.setStrategy(raycasterState.value ? customRaycaster : threeRaycaster)
+            raycasterController.setValue(raycasterState.value)
+            raycasterController.updateDisplay()
+            break
+    }
+})
 
 // ------------------------------------------------------------
 // GUI
 // ------------------------------------------------------------
 const gui = new GUI()
-gui.close()
 
 const simFolder = gui.addFolder('Simulation')
+simFolder.close()
 simFolder.add(PARAMS, 'wind_strength', 0, 1, 0.01)
 simFolder.add(PARAMS, 'wind_frequency', 0, 2, 0.1)
 simFolder.add(PARAMS, 'damping', 0.98, 1.0, 0.001)
 simFolder.add(PARAMS, 'sphere_collision_compliance', 0, 0.01, 0.0001)
+simFolder.add(PARAMS, 'whip_strength', 0, 0.1, 0.001).name('Whip Strength')
 
 const envFolder = gui.addFolder('Environment')
-// const envParams = { hairColor: '#ddccaa' }
+envFolder.close()
 envFolder.addColor(PARAMS, 'hair_color').onChange(v => {
     strandGeometry.mesh.material.uniforms.uColor.value.set(v)
 })
@@ -227,8 +322,57 @@ envFolder.addColor(PARAMS, 'sphere_color').onChange(v => {
     sphere.mesh.material.color.set(v)
 })
 
+
+const debugFolder = gui.addFolder('Debug')
+debugFolder.close()
+
+const axesController = debugFolder.add({ value: debugManager.isVisible('axes') }, 'value')
+    .name('Local Axes (A)')
+    .onChange(v => debugManager.setVisible('axes', v))
+
+const orientationCubeController = debugFolder.add({ value: debugManager.isVisible('orientationCube') }, 'value')
+    .name('Current Orientation (Y)')
+    .onChange(v => debugManager.setVisible('orientationCube', v))
+
+const targetCubeController = debugFolder.add({ value: debugManager.isVisible('targetCube') }, 'value')
+    .name('Target Orientation (T)')
+    .onChange(v => debugManager.setVisible('targetCube', v))
+
+const rollingCubeController = debugFolder.add({ value: debugManager.isVisible('rollingCube') }, 'value')
+    .name('Rolling Orientation (G)')
+    .onChange(v => debugManager.setVisible('rollingCube', v))
+
+const rayController = debugFolder.add({ value: debugManager.isVisible('rayLine') }, 'value')
+    .name('Camera Ray (X)')
+    .onChange(v => debugManager.setVisible('rayLine', v))
+
+const planeController = debugFolder.add({ value: debugManager.isVisible('dragPlane') }, 'value')
+    .name('Drag Plane (Z)')
+    .onChange(v => debugManager.setVisible('dragPlane', v))
+
+const snapshotsController = debugFolder.add({ value: debugManager.isVisible('snapshots') }, 'value')
+    .name('Snapshots (R/C)')
+    .onChange(v => debugManager.setVisible('snapshots', v))
+
+const freezeState = { value: sphere.frozen }
+const freezeController = debugFolder.add(freezeState, 'value')
+    .name('Freeze Sphere (Q)')
+    .onChange(v => { sphere.frozen = v })
+
+const orbitState = { value: controls.enabled }
+const orbitController = debugFolder.add(orbitState, 'value')
+    .name('Orbit Camera (O)')
+    .onChange(v => { controls.enabled = v })
+
+const raycasterState = { value: true }  // true = custom, false = three.js
+const raycasterController = debugFolder.add(raycasterState, 'value')
+    .name('Custom Raycaster (V)')
+    .onChange(v => {
+        raycasterContext.setStrategy(v ? customRaycaster : threeRaycaster)
+    })
+
 // ------------------------------------------------------------
-// Resize handler
+// Resize
 // ------------------------------------------------------------
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight
@@ -240,8 +384,9 @@ window.addEventListener('resize', () => {
 // ------------------------------------------------------------
 // Animation loop
 // ------------------------------------------------------------
-function animate() {
+const clock = new THREE.Clock()
 
+function animate() {
     requestAnimationFrame(animate)
     stats.begin()
 
@@ -251,15 +396,27 @@ function animate() {
 
     sphere.update(dt)
     sphere.updateIdleTimer(dt)
-    if (!sphere.isDragging) {
+
+    if (!sphere.isDragging && !sphere.frozen) {
         sphere.updateOrientation(dt)
         sphere.rotateTowardCamera(camera.position)
-        sphere.updateHeadTilt(camera, mouseNDC)
+        sphere.updateHeadTilt(mouseNDC)
     }
-    sphere.updateEyes(camera, mouseNDC)
 
-    simulation.update(dt, sphere.getCenter(), sphere.getOrientation(),
-        sphere.isDragging, sphere.getFrameDelta(), clock.getElapsedTime())
+    if (!sphere.frozen)
+        sphere.updateEyes(mouseNDC, camera)
+
+    const ray = raycasterContext.castRay(mouseNDC, camera)
+    debugManager.update(ray, camera)
+
+    simulation.update(
+        dt,
+        sphere.getCenter(),
+        sphere.getOrientation(),
+        sphere.isDragging,
+        sphere.getFrameDelta(),
+        clock.getElapsedTime()
+    )
 
     if (strandGeometry.mesh.material.uniforms) {
         strandGeometry.mesh.material.uniforms.uPositionTex.value =

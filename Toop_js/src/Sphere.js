@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { PARAMS } from './config.js'
+import { raySphereIntersectPoint, rayPlaneIntersect, rayFromCamera } from './utils/rayUtils.js'
 
 export class Sphere {
 
@@ -17,9 +18,6 @@ export class Sphere {
         this.idleTimer = 0.0
 
         // pre-allocated objects for character methods
-        this._raycaster = new THREE.Raycaster()
-        this._plane = new THREE.Plane()
-        this._hitPoint = new THREE.Vector3()
         this._cameraRight = new THREE.Vector3()
         this._cameraUp = new THREE.Vector3()
         this._offset = new THREE.Vector3()
@@ -66,6 +64,7 @@ export class Sphere {
         // pre-allocated for updateEyes
         this._eyeLocalVec = new THREE.Vector3()
         this._eyeOutward = new THREE.Vector3()
+        this._eyeRayOrigin = new THREE.Vector3()
         this._lookDir = new THREE.Vector3()
         this._finalDir = new THREE.Vector3()
         this._pupilPos = new THREE.Vector3()
@@ -78,6 +77,41 @@ export class Sphere {
         this.mesh = new THREE.Mesh(geo, mat)
         this.mesh.castShadow = true
         scene.add(this.mesh)
+
+        // debug: local axes helper
+        this.axesHelper = new THREE.AxesHelper(this.radius * 2)
+        this.axesHelper.visible = true
+        scene.add(this.axesHelper)
+
+        // debug: raycaster visualization
+        this.rayHitMarker = new THREE.Mesh(
+            new THREE.SphereGeometry(0.03, 8, 8),
+            new THREE.MeshBasicMaterial({ color: 0x00ffff })
+        )
+        scene.add(this.rayHitMarker)
+        this.rayHitMarker.visible = false
+
+        this.rayHitMarker.visible = true
+
+        // debug: persistent ray lines
+        this.savedRayLines = []
+        this._savedRayMaterial = new THREE.LineBasicMaterial({ color: 0xffff00 })
+        this._scene = scene  // needed to add/remove saved lines later
+
+        // debug: drag plane visualization
+        const planeGeo = new THREE.PlaneGeometry(2, 2)
+        const planeMat = new THREE.MeshBasicMaterial({
+            color: 0x4444ff,
+            transparent: true,
+            opacity: 0.3,
+            side: THREE.DoubleSide,
+        })
+        this.dragPlaneMesh = new THREE.Mesh(planeGeo, planeMat)
+        this.dragPlaneMesh.visible = false
+        scene.add(this.dragPlaneMesh)
+
+        this._planeAlignQuat = new THREE.Quaternion()
+        this._planeDefaultNormal = new THREE.Vector3(0, 0, 1)
     }
 
     update(dt) {
@@ -121,25 +155,31 @@ export class Sphere {
         this._frameDelta.copy(this.center).sub(this._prevCenter)
         this._prevCenter.copy(this.center)
         this.mesh.position.copy(this.center)
+
+        this.axesHelper.position.copy(this.center)
+        this.axesHelper.quaternion.copy(this.sphereOrientation)
     }
 
-    handleDragStart(raycaster) {
-        const hits = raycaster.intersectObject(this.mesh)
-        if (hits.length === 0) return false
+    handleDragStart(ray) {
+        const hit = raySphereIntersectPoint(ray.origin, ray.dir, this.center, this.radius)
+        if (!hit) return false
         this.isDragging = true
         this.velocity.set(0, 0, 0)
         this.dragVelocity.set(0, 0, 0)
         return true
     }
 
-    handleDragMove(raycaster, camera, dt) {
+    handleDragMove(ray, camera, dt) {
         camera.getWorldDirection(this._forward)
-        this._plane.setFromNormalAndCoplanarPoint(this._forward, this.center)
-        const hit = raycaster.ray.intersectPlane(this._plane, this._dragHit)
+
+        this.debugUpdateDragPlane(this._forward, this.center)
+
+        const hit = rayPlaneIntersect(ray.origin, ray.dir, this._forward, this.center)
         if (!hit) return
 
-        this.center.lerp(hit, PARAMS.drag_smoothing)
-        this._lastHit.copy(hit)
+        this._dragHit.set(hit.point.x, hit.point.y, hit.point.z)
+        this.center.lerp(this._dragHit, PARAMS.drag_smoothing)
+        this._lastHit.copy(this._dragHit)
 
         this.center.x = Math.max(this.roomMin.x + this.radius, Math.min(this.roomMax.x - this.radius, this.center.x))
         this.center.y = Math.max(this.roomMin.y + this.radius, Math.min(this.roomMax.y - this.radius, this.center.y))
@@ -149,6 +189,7 @@ export class Sphere {
     handleDragEnd() {
         this.isDragging = false
         this.velocity.copy(this.dragVelocity).multiplyScalar(PARAMS.throw_multiplier)
+        this.dragPlaneMesh.visible = false
     }
 
     updateEyes(camera, mouseNDC) {
@@ -182,12 +223,11 @@ export class Sphere {
                 .addScaledVector(this._eyeOutward, eyeR * 0.55)
 
             // ray-plane intersection for pupil tracking
-            this._raycaster.setFromCamera(mouseNDC, camera)
-            this._plane.setFromNormalAndCoplanarPoint(this._eyeOutward, eye.worldPos)
-            const hit = this._raycaster.ray.intersectPlane(this._plane, this._hitPoint)
+            const ray = rayFromCamera(mouseNDC, camera, this._eyeRayOrigin)
+            const hit = rayPlaneIntersect(ray.origin, ray.dir, this._eyeOutward, eye.worldPos)
 
             if (hit) {
-                this._lookDir.copy(hit).sub(eye.worldPos)
+                this._lookDir.set(hit.point.x, hit.point.y, hit.point.z).sub(eye.worldPos)
                 const dist = this._lookDir.length()
                 if (dist > 1e-6) {
                     this._lookDir.divideScalar(dist)
@@ -278,6 +318,45 @@ export class Sphere {
             .normalize()
 
         this.sphereOrientation.slerp(this._targetQuat, 0.5)
+    }
+
+    debugUpdateRay(ray) {
+        const origin = ray.origin
+        const dir = ray.dir
+        const far = origin.clone().addScaledVector(dir, 5)
+
+        const hit = raySphereIntersectPoint(origin, dir, this.center, this.radius)
+        if (hit) {
+            this.rayHitMarker.position.set(hit.point.x, hit.point.y, hit.point.z)
+            this.rayHitMarker.visible = true
+        } else {
+            this.rayHitMarker.visible = false
+        }
+    }
+
+    debugUpdateDragPlane(planeNormal, planePoint) {
+        this.dragPlaneMesh.position.set(planePoint.x, planePoint.y, planePoint.z)
+        this._planeAlignQuat.setFromUnitVectors(this._planeDefaultNormal, planeNormal)
+        this.dragPlaneMesh.quaternion.copy(this._planeAlignQuat)
+        this.dragPlaneMesh.visible = true
+    }
+
+    saveCurrentRay(ray) {
+        const origin = ray.origin.clone()
+        const far = origin.clone().addScaledVector(ray.dir, 20)
+
+        const geometry = new THREE.BufferGeometry().setFromPoints([origin, far])
+        const line = new THREE.Line(geometry, this._savedRayMaterial)
+        this._scene.add(line)
+        this.savedRayLines.push(line)
+    }
+
+    clearSavedRays() {
+        for (const line of this.savedRayLines) {
+            this._scene.remove(line)
+            line.geometry.dispose()
+        }
+        this.savedRayLines.length = 0
     }
 
     getCenter() { return this.center }

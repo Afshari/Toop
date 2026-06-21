@@ -29,6 +29,8 @@ export class HairSimulation {
 
         this.currentPosTex = this.initPosTex
         this.currentVelTex = this.initVelTex
+
+        this._prevFrameDelta = new THREE.Vector3()
     }
 
     // -------------------------------------------------------
@@ -105,11 +107,11 @@ export class HairSimulation {
     // One GPUComputationRenderer per pass
     // -------------------------------------------------------
     _initCompute() {
-        console.log('integrate src loaded:', typeof integrateSrc, integrateSrc?.slice(0, 40))
-        console.log('constraints src loaded:', typeof constraintsSrc, constraintsSrc?.slice(0, 40))
-        console.log('sphereCol src loaded:', typeof sphereColSrc, sphereColSrc?.slice(0, 40))
-        console.log('groundCol src loaded:', typeof groundColSrc, groundColSrc?.slice(0, 40))
-        console.log('velocity src loaded:', typeof updateVelocitySrc, updateVelocitySrc?.slice(0, 40))
+        // console.log('integrate src loaded:', typeof integrateSrc, integrateSrc?.slice(0, 40))
+        // console.log('constraints src loaded:', typeof constraintsSrc, constraintsSrc?.slice(0, 40))
+        // console.log('sphereCol src loaded:', typeof sphereColSrc, sphereColSrc?.slice(0, 40))
+        // console.log('groundCol src loaded:', typeof groundColSrc, groundColSrc?.slice(0, 40))
+        // console.log('velocity src loaded:', typeof updateVelocitySrc, updateVelocitySrc?.slice(0, 40))
 
         const s = this.texSize
         const r = this.renderer
@@ -200,6 +202,9 @@ export class HairSimulation {
             uPosition: { value: this.initPosTex },
             uDelta: { value: new THREE.Vector3() },
             uDragSpeed: { value: 0.0 },
+            uAccel: { value: new THREE.Vector3() },
+            uAccelMagnitude: { value: 0.0 },
+            uWhipStrength: { value: PARAMS.whip_strength },
         })
         this._checkError(this.gpuTranslateAll.init(), 'gpuTranslateAll')
     }
@@ -236,14 +241,26 @@ export class HairSimulation {
         let currentPos = this.currentPosTex
         let currentVel = this.currentVelTex
 
-        // --- translate all particles when dragging ---
         if (isDragging && frameDelta && frameDelta.length() > 1e-6) {
             const dragSpeed = frameDelta.length() / dt
+
+            // acceleration = how much the delta changed since last frame
+            this._accel = this._accel || new THREE.Vector3()
+            this._accel.copy(frameDelta).sub(this._prevFrameDelta).divideScalar(dt)
+            const accelMagnitude = this._accel.length()
+
             this.translateAllVar.material.uniforms.uPosition.value = currentPos
             this.translateAllVar.material.uniforms.uDelta.value.copy(frameDelta)
             this.translateAllVar.material.uniforms.uDragSpeed.value = dragSpeed
+            this.translateAllVar.material.uniforms.uAccel.value.copy(this._accel)
+            this.translateAllVar.material.uniforms.uAccelMagnitude.value = accelMagnitude
+            this.translateAllVar.material.uniforms.uWhipStrength.value = PARAMS.whip_strength
             this.gpuTranslateAll.compute()
             currentPos = this.gpuTranslateAll.getCurrentRenderTarget(this.translateAllVar).texture
+
+            this._prevFrameDelta.copy(frameDelta)
+        } else {
+            this._prevFrameDelta.set(0, 0, 0)
         }
 
         for (let step = 0; step < PARAMS.num_substeps; step++) {
