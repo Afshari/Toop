@@ -78,3 +78,6 @@ Toop_js/.vite/
 # OS
 .DS_Store
 Thumbs.db
+
+# GUI
+imgui.ini
