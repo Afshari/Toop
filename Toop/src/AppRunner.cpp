@@ -175,11 +175,19 @@ namespace Toop {
                 mouse_ray, eye_center,
                 camera.GetForward(), tilt_mouse_world);
 
-            sphere.UpdateHeadTilt(
-                tilt_mouse_world.x, tilt_mouse_world.y, tilt_mouse_world.z,
-                camera.GetRight().x, camera.GetRight().y, camera.GetRight().z,
-                camera.GetUp().x, camera.GetUp().y, camera.GetUp().z);
-
+#ifdef TOOP_DEBUG
+            if (!debug_manager.GetContext().frozen)
+            {
+#endif
+                sphere.UpdateHeadTilt(
+                    tilt_mouse_world.x, tilt_mouse_world.y, tilt_mouse_world.z,
+                    camera.GetRight().x, camera.GetRight().y, camera.GetRight().z,
+                    camera.GetUp().x, camera.GetUp().y, camera.GetUp().z);
+                sphere.RotateTowardCamera(
+                    camera.GetPos().x, camera.GetPos().y, camera.GetPos().z);
+#ifdef TOOP_DEBUG
+            }
+#endif
             sim.SetSphereState(
                 sphere.GetPosX(), sphere.GetPosY(), sphere.GetPosZ(),
                 sphere.GetVisualQuatX(), sphere.GetVisualQuatY(),
@@ -244,18 +252,16 @@ namespace Toop {
 
 #ifdef TOOP_DEBUG
             debug_manager.Draw(view, proj);
-            debug_ui.Render(debug_state, debug_manager.GetContext());
+            if (debug_manager.GetContext().show_imgui)
+                debug_ui.Render(debug_state, debug_manager.GetContext());
             debug_ui.EndFrame();
 #endif
-
             window.EndFrame();
         }
-
 #ifdef TOOP_DEBUG
         debug_manager.Shutdown();
         debug_ui.Shutdown();
 #endif
-
         renderer.Shutdown();
         sim.Shutdown();
         return 0;

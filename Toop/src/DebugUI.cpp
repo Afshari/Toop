@@ -52,7 +52,7 @@ namespace Toop {
             ImGuiWindowFlags_NoMove);
 
         // performance
-        if (ImGui::CollapsingHeader("Performance", ImGuiTreeNodeFlags_DefaultOpen))
+        if (ImGui::CollapsingHeader("Performance"))
         {
             ImGui::Text("FPS:      %.1f", state.fps);
             ImGui::Text("Frame:    %.2f ms", state.frame_ms);
@@ -60,7 +60,7 @@ namespace Toop {
         }
 
         // simulation
-        if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen))
+        if (ImGui::CollapsingHeader("Simulation"))
         {
             ImGui::Checkbox("Freeze sim", &state.freeze_sim);
             ImGui::Checkbox("Show hair", &state.show_hair);
@@ -78,16 +78,22 @@ namespace Toop {
         }
 
         // debug overlays
+        ImGui::SetNextItemOpen(debug_context.show_debug_panel, ImGuiCond_Always);
         if (ImGui::CollapsingHeader("Debug Overlays"))
         {
-            ImGui::Checkbox("Camera ray", &debug_context.show_camera_ray);
-            ImGui::Checkbox("Eye planes", &debug_context.show_eye_planes);
-            ImGui::Checkbox("Drag plane", &debug_context.show_drag_plane);
-            ImGui::Checkbox("Orientation cubes", &debug_context.show_orientation_cubes);
-            ImGui::Checkbox("Local axes", &debug_context.show_local_axes);
-            ImGui::Checkbox("Freeze character", &debug_context.frozen);
-            ImGui::Text("Snapshots: %d", (int)debug_context.snapshots.size());
+            ImGui::Checkbox("Local Axes (A)", &debug_context.show_local_axes);
+            ImGui::Checkbox("Orientation Cubes (Y)", &debug_context.show_orientation_cubes);
+            ImGui::Checkbox("Camera Ray (X)", &debug_context.show_camera_ray);
+            ImGui::Checkbox("Eye Planes", &debug_context.show_eye_planes);
+            ImGui::Checkbox("Drag Plane (Z)", &debug_context.show_drag_plane);
+            ImGui::Checkbox("Freeze Sphere (Q)", &debug_context.frozen);
+            ImGui::Checkbox("Hide UI (F)", &debug_context.show_imgui);
+            ImGui::Text("Snapshots: %d (R/C)", (int)debug_context.snapshots.size());
         }
+        // sync back in case user clicked the header manually
+        debug_context.show_debug_panel = ImGui::IsItemToggledOpen()
+            ? !debug_context.show_debug_panel
+            : debug_context.show_debug_panel;
 
         ImGui::End();
     }

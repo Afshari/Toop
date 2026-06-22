@@ -20,6 +20,8 @@ namespace Toop {
         bool show_orientation_cubes = false;
         bool show_local_axes = false;
         bool frozen = false;
+        bool show_imgui = true;
+        bool show_debug_panel = false;
 
         // live per-frame data - copied in each frame by DebugManager::Sync
         Ray camera_ray;

@@ -82,6 +82,16 @@ namespace Toop {
                 m_vel.z *= m_damping;
             }
 
+            // ceiling collision
+            float ceiling_y = m_room_max.y - m_sphere_radius;
+            if (m_pos.y > ceiling_y)
+            {
+                m_pos.y = ceiling_y;
+                m_vel.y = -m_vel.y * m_restitution;
+                m_vel.x *= m_damping;
+                m_vel.z *= m_damping;
+            }
+
             // wall collisions
             float min_x = m_room_min.x + m_sphere_radius;
             float max_x = m_room_max.x - m_sphere_radius;
@@ -190,8 +200,8 @@ namespace Toop {
         Quat tilt = NormalizeQuat(MultiplyQuat(rot_y, rot_x));
 
         // blend tilt on top of rolling orientation
-        m_sphere_orientation = NormalizeQuat(
-            MultiplyQuat(m_orientation, tilt));
+        Quat target = NormalizeQuat(MultiplyQuat(m_orientation, tilt));
+        m_sphere_orientation = SlerpQuat(m_sphere_orientation, target, 0.08f);
     }
 
     // --------------------------------------------------------------------------------
@@ -227,6 +237,69 @@ namespace Toop {
         };
 
         m_orientation = NormalizeQuat(MultiplyQuat(delta_q, m_orientation));
+    }
+
+    // --------------------------------------------------------------------------------
+    Quat SpherePhysics::SlerpQuat(const Quat& a, const Quat& b, float t) const
+    {
+        float dot = a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+
+        Quat bb = b;
+        if (dot < 0.0f)
+        {
+            bb = { -b.x, -b.y, -b.z, -b.w };
+            dot = -dot;
+        }
+
+        if (dot > 0.9995f)
+        {
+            // nearly identical - linear interpolate and normalize
+            Quat result = {
+                a.x + t * (bb.x - a.x),
+                a.y + t * (bb.y - a.y),
+                a.z + t * (bb.z - a.z),
+                a.w + t * (bb.w - a.w)
+            };
+            return NormalizeQuat(result);
+        }
+
+        float theta_0 = acosf(dot);
+        float theta = theta_0 * t;
+        float sin_theta = sinf(theta);
+        float sin_theta_0 = sinf(theta_0);
+
+        float s0 = cosf(theta) - dot * sin_theta / sin_theta_0;
+        float s1 = sin_theta / sin_theta_0;
+
+        return {
+            a.x * s0 + bb.x * s1,
+            a.y * s0 + bb.y * s1,
+            a.z * s0 + bb.z * s1,
+            a.w * s0 + bb.w * s1
+        };
+    }
+
+    // --------------------------------------------------------------------------------
+    void SpherePhysics::RotateTowardCamera(float camera_x, float camera_y, float camera_z)
+    {
+        if (m_idle_timer < m_idle_threshold) return; // not truly idle yet
+
+        float to_cam_x = camera_x - m_pos.x;
+        float to_cam_z = camera_z - m_pos.z;
+        float len = sqrtf(to_cam_x * to_cam_x + to_cam_z * to_cam_z);
+        if (len < 1e-6f) return;
+
+        to_cam_x /= len;
+        to_cam_z /= len;
+
+        float angle = atan2f(to_cam_x, to_cam_z);
+
+        float half = angle * 0.5f;
+        Quat target = { 0.0f, sinf(half), 0.0f, cosf(half) };
+
+        m_orientation = SlerpQuat(m_orientation, target,
+            fminf(m_idle_rotate_speed, 1.0f));
+        m_orientation = NormalizeQuat(m_orientation);
     }
 
     // --------------------------------------------------------------------------------

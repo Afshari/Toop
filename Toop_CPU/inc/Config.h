@@ -36,6 +36,7 @@ namespace Toop {
         float throw_multiplier = 0.3f;
         float idle_threshold_sec = 0.5f;
         float idle_speed_threshold = 0.05f;
+        float idle_rotate_speed = 0.04f;
     };
 
     struct RoomConfig

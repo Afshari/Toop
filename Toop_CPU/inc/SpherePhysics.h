@@ -49,6 +49,8 @@ namespace Toop {
             float camera_right_x, float camera_right_y, float camera_right_z,
             float camera_up_x, float camera_up_y, float camera_up_z);
 
+        void RotateTowardCamera(float camera_x, float camera_y, float camera_z);
+
         float GetVisualQuatX() const { return m_sphere_orientation.x; }
         float GetVisualQuatY() const { return m_sphere_orientation.y; }
         float GetVisualQuatZ() const { return m_sphere_orientation.z; }
@@ -59,6 +61,7 @@ namespace Toop {
         void UpdateIdleDetection(float dt);
         Quat MultiplyQuat(const Quat& a, const Quat& b) const;
         Quat NormalizeQuat(const Quat& q) const;
+        Quat SlerpQuat(const Quat& a, const Quat& b, float t) const;
 
         // config
         float m_gravity = -1.0f;
@@ -74,6 +77,7 @@ namespace Toop {
         Vec3  m_room_max;
         float m_max_tilt = 0.15f;
         float m_tilt_strength = 0.5f;
+        float m_idle_rotate_speed = 0.04f;
 
         // state
         Vec3  m_pos;

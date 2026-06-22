@@ -334,7 +334,7 @@ namespace Toop {
         m_hair_shader->Bind();
         m_hair_shader->SetMat4("uView", glm::value_ptr(view));
         m_hair_shader->SetMat4("uProj", glm::value_ptr(proj));
-        m_hair_shader->SetVec3("uColor", 0.9f, 0.8f, 0.6f);
+        m_hair_shader->SetVec3("uColor", 1.0f, 0.5f, 0.5f);
 
         glBindVertexArray(m_hair_vao);
         glDrawElements(GL_LINES, m_hair_index_count, GL_UNSIGNED_INT, 0);
@@ -358,7 +358,7 @@ namespace Toop {
         m_sphere_shader->SetMat4("uModel", glm::value_ptr(model));
         m_sphere_shader->SetMat4("uView", glm::value_ptr(view));
         m_sphere_shader->SetMat4("uProj", glm::value_ptr(proj));
-        m_sphere_shader->SetVec3("uColor", 0.3f, 0.6f, 0.9f);
+        m_sphere_shader->SetVec3("uColor", 0.9f, 0.15f, 0.15f);
 
         glBindVertexArray(m_sphere_vao);
         glDrawElements(GL_TRIANGLES, m_sphere_index_count, GL_UNSIGNED_INT, 0);

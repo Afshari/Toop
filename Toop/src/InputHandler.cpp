@@ -89,17 +89,53 @@ namespace Toop {
             case GLFW_KEY_ESCAPE:
                 glfwSetWindowShouldClose(m_window->GetGLFWWindow(), true);
                 break;
-            case GLFW_KEY_W: m_camera->HandleKeyW(); break;
-            case GLFW_KEY_S: m_camera->HandleKeyS(); break;
-            case GLFW_KEY_A: m_camera->HandleKeyA(); break;
-            case GLFW_KEY_D: m_camera->HandleKeyD(); break;
-            case GLFW_KEY_Q: m_camera->HandleKeyQ(); break;
-            case GLFW_KEY_E: m_camera->HandleKeyE(); break;
+
+                // camera movement - arrow keys + page up/down
+            case GLFW_KEY_UP:       m_camera->HandleKeyW(); break;
+            case GLFW_KEY_DOWN:     m_camera->HandleKeyS(); break;
+            case GLFW_KEY_LEFT:     m_camera->HandleKeyA(); break;
+            case GLFW_KEY_RIGHT:    m_camera->HandleKeyD(); break;
+            case GLFW_KEY_PAGE_UP:  m_camera->HandleKeyQ(); break;
+            case GLFW_KEY_PAGE_DOWN:m_camera->HandleKeyE(); break;
+
+                // camera presets
             case GLFW_KEY_1: m_camera->SetPreset(1, sphere_pos); break;
             case GLFW_KEY_2: m_camera->SetPreset(2, sphere_pos); break;
             case GLFW_KEY_3: m_camera->SetPreset(3, sphere_pos); break;
             case GLFW_KEY_4: m_camera->SetPreset(4, sphere_pos); break;
+
 #ifdef TOOP_DEBUG
+                // debug shortcuts
+            case GLFW_KEY_A:
+                if (m_debug_manager)
+                    m_debug_manager->GetContext().show_local_axes =
+                    !m_debug_manager->GetContext().show_local_axes;
+                break;
+            case GLFW_KEY_Y:
+                if (m_debug_manager)
+                    m_debug_manager->GetContext().show_orientation_cubes =
+                    !m_debug_manager->GetContext().show_orientation_cubes;
+                break;
+            case GLFW_KEY_X:
+                if (m_debug_manager)
+                    m_debug_manager->GetContext().show_camera_ray =
+                    !m_debug_manager->GetContext().show_camera_ray;
+                break;
+            case GLFW_KEY_Z:
+                if (m_debug_manager)
+                    m_debug_manager->GetContext().show_drag_plane =
+                    !m_debug_manager->GetContext().show_drag_plane;
+                break;
+            case GLFW_KEY_Q:
+                if (m_debug_manager)
+                    m_debug_manager->GetContext().frozen =
+                    !m_debug_manager->GetContext().frozen;
+                break;
+            case GLFW_KEY_F:
+                if (m_debug_manager)
+                    m_debug_manager->GetContext().show_imgui =
+                    !m_debug_manager->GetContext().show_imgui;
+                break;
             case GLFW_KEY_R:
                 if (m_debug_manager)
                     m_debug_manager->TakeSnapshot();
@@ -107,6 +143,11 @@ namespace Toop {
             case GLFW_KEY_C:
                 if (m_debug_manager)
                     m_debug_manager->ClearSnapshots();
+                break;
+            case GLFW_KEY_D:
+                if (m_debug_manager)
+                    m_debug_manager->GetContext().show_debug_panel =
+                    !m_debug_manager->GetContext().show_debug_panel;
                 break;
 #endif
             }
