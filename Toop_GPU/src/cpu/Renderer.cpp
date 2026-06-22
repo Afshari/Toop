@@ -9,6 +9,7 @@
 #include <cuda_gl_interop.h>
 #include <windows.h>
 #include <filesystem>
+#include "RayUtils.h"
 
 namespace Toop {
 
@@ -309,14 +310,19 @@ namespace Toop {
         const glm::quat& sphere_orientation,
         float sphere_radius,
         const BaldPatchConfig& bald_patches,
-        const glm::vec3& mouse_world)
+        const glm::vec3& mouse_ray_origin,
+        const glm::vec3& mouse_ray_dir,
+        const glm::vec3& camera_forward,
+        bool  frozen)
     {
         if (!m_initialized) return;
 
         RenderGround(view, proj);
         RenderRoom(view, proj);
-        RenderSphere(view, proj, sphere_pos, sphere_radius);
-        RenderEyes(view, proj, sphere_pos, sphere_orientation, sphere_radius, bald_patches, mouse_world);
+        RenderSphere(view, proj, sphere_pos, sphere_orientation, sphere_radius);
+        RenderEyes(view, proj, sphere_pos, sphere_orientation,
+            sphere_radius, bald_patches,
+            mouse_ray_origin, mouse_ray_dir, camera_forward, frozen);
         RenderHair(view, proj);
     }
 
@@ -328,7 +334,7 @@ namespace Toop {
         m_hair_shader->Bind();
         m_hair_shader->SetMat4("uView", glm::value_ptr(view));
         m_hair_shader->SetMat4("uProj", glm::value_ptr(proj));
-        m_hair_shader->SetVec3("uColor", 0.9f, 0.8f, 0.6f);
+        m_hair_shader->SetVec3("uColor", 1.0f, 0.5f, 0.5f);
 
         glBindVertexArray(m_hair_vao);
         glDrawElements(GL_LINES, m_hair_index_count, GL_UNSIGNED_INT, 0);
@@ -342,15 +348,17 @@ namespace Toop {
         const glm::mat4& view,
         const glm::mat4& proj,
         const glm::vec3& pos,
+        const glm::quat& orientation,
         float            /*radius*/)
     {
-        glm::mat4 model = glm::translate(glm::mat4(1.0f), pos);
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), pos)
+            * glm::mat4_cast(orientation);
 
         m_sphere_shader->Bind();
         m_sphere_shader->SetMat4("uModel", glm::value_ptr(model));
         m_sphere_shader->SetMat4("uView", glm::value_ptr(view));
         m_sphere_shader->SetMat4("uProj", glm::value_ptr(proj));
-        m_sphere_shader->SetVec3("uColor", 0.3f, 0.6f, 0.9f);
+        m_sphere_shader->SetVec3("uColor", 0.9f, 0.15f, 0.15f);
 
         glBindVertexArray(m_sphere_vao);
         glDrawElements(GL_TRIANGLES, m_sphere_index_count, GL_UNSIGNED_INT, 0);
@@ -401,12 +409,14 @@ namespace Toop {
         const glm::quat& sphere_orientation,
         float sphere_radius,
         const BaldPatchConfig& bald_patches,
-        const glm::vec3& mouse_world)
+        const glm::vec3& mouse_ray_origin,
+        const glm::vec3& mouse_ray_dir,
+        const glm::vec3& camera_forward,
+        bool  frozen)
     {
         float eye_radius = sphere_radius * 0.18f;
         float pupil_radius = eye_radius * 0.6f;
 
-        // eye directions from bald patch config
         glm::vec3 eye_dirs[2] = {
             glm::normalize(glm::vec3(
                 bald_patches.eye_left_dir.x,
@@ -420,7 +430,6 @@ namespace Toop {
 
         for (int i = 0; i < 2; i++)
         {
-            // eye world position
             glm::vec3 eye_local = eye_dirs[i] * sphere_radius * 0.85f;
             glm::vec3 eye_world = sphere_pos
                 + QuatRotate(sphere_orientation, eye_local);
@@ -442,21 +451,28 @@ namespace Toop {
             glDrawElements(GL_TRIANGLES, m_sphere_index_count, GL_UNSIGNED_INT, 0);
             glBindVertexArray(0);
 
-            // pupil position - offset along eye forward direction
+            // per-eye mouse world intersection
             glm::vec3 eye_forward = glm::normalize(eye_world - sphere_pos);
-            
-            // pupil tracking - follow mouse
-            glm::vec3 to_mouse = mouse_world - eye_world;
-            float     max_offset = eye_radius * 0.25f;
+            glm::vec3 eye_mouse_world = eye_world; // fallback
+            RayUtils::RayCameraPlaneIntersect(
+                { mouse_ray_origin, mouse_ray_dir },
+                eye_world,        // <- plane at eye position
+                camera_forward,
+                eye_mouse_world);
 
-            // project to_mouse onto eye plane (perpendicular to eye_forward)
-            glm::vec3 projected = to_mouse
-                - glm::dot(to_mouse, eye_forward) * eye_forward;
+            glm::vec3 projected(0.0f);
 
-            // clamp to eye radius
-            float proj_len = glm::length(projected);
-            if (proj_len > max_offset)
-                projected = projected / proj_len * max_offset;
+            if (!frozen)
+            {
+                glm::vec3 to_mouse = eye_mouse_world - eye_world;
+                float     max_offset = eye_radius * 0.25f;
+
+                projected = to_mouse - glm::dot(to_mouse, eye_forward) * eye_forward;
+
+                float proj_len = glm::length(projected);
+                if (proj_len > max_offset)
+                    projected = projected / proj_len * max_offset;
+            }
 
             glm::vec3 pupil_world = eye_world
                 + eye_forward * eye_radius * 0.5f
@@ -506,6 +522,44 @@ namespace Toop {
 
         m_initialized = false;
         std::cout << "[INFO] Renderer shutdown." << std::endl;
+    }
+
+    // --------------------------------------------------------------------------------
+    glm::vec3 Renderer::GetEyeWorldPos(
+        int                    eye_index,
+        const glm::vec3& sphere_pos,
+        const glm::quat& sphere_orientation,
+        float                  sphere_radius,
+        const BaldPatchConfig& bald_patches) const
+    {
+        glm::vec3 eye_dirs[2] = {
+            glm::normalize(glm::vec3(
+                bald_patches.eye_left_dir.x,
+                bald_patches.eye_left_dir.y,
+                bald_patches.eye_left_dir.z)),
+            glm::normalize(glm::vec3(
+                bald_patches.eye_right_dir.x,
+                bald_patches.eye_right_dir.y,
+                bald_patches.eye_right_dir.z))
+        };
+
+        glm::vec3 eye_local = eye_dirs[eye_index] * sphere_radius * 0.85f;
+        return sphere_pos + QuatRotate(sphere_orientation, eye_local);
+    }
+
+    // --------------------------------------------------------------------------------
+    glm::vec3 Renderer::GetEyeOutwardNormal(
+        int                    eye_index,
+        const glm::vec3& sphere_pos,
+        const glm::quat& sphere_orientation,
+        float                  sphere_radius,
+        const BaldPatchConfig& bald_patches) const
+    {
+        glm::vec3 eye_world = GetEyeWorldPos(
+            eye_index, sphere_pos, sphere_orientation,
+            sphere_radius, bald_patches);
+
+        return glm::normalize(eye_world - sphere_pos);
     }
 
 } // namespace Toop

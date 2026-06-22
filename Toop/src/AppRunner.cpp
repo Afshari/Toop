@@ -20,6 +20,7 @@
 
 #ifdef TOOP_DEBUG
 #include "DebugUI.h"
+#include "DebugManager.h"
 #endif
 
 namespace Toop {
@@ -84,7 +85,14 @@ namespace Toop {
         renderer.UnmapInterop();
 
         InputHandler input;
+#ifdef TOOP_DEBUG
+        DebugManager debug_manager;
+        debug_manager.Init();
+
+        input.Init(&window, &camera, &sphere, &config, &debug_manager, &renderer);
+#else
         input.Init(&window, &camera, &sphere, &config);
+#endif
         input.RegisterCallbacks();
 
 #ifdef TOOP_DEBUG
@@ -97,9 +105,6 @@ namespace Toop {
         debug_state.wind_frequency = config.sim.wind_frequency;
         debug_state.gravity = config.sim.gravity;
         debug_state.num_substeps = config.sim.num_substeps;
-
-        DebugRenderer debug_renderer;
-        debug_renderer.Init();
 #endif
 
         // --- main loop ---
@@ -134,73 +139,59 @@ namespace Toop {
             window.BeginFrame();
 
             // --- update ---
-            sphere.Update(dt);
 #ifdef TOOP_DEBUG
-            // mouse ray
-            //if (debug_state.show_debug_rays)
-            //{
-            //    const auto& mouse = window.GetMouseState();
-            //    Ray ray = RayUtils::ScreenToRay(
-            //        mouse.x, mouse.y,
-            //        window.GetWidth(), window.GetHeight(),
-            //        view, proj);
-            //    debug_renderer.AddRay(ray.origin, ray.direction, 10.0f, glm::vec3(1.0f, 1.0f, 0.0f));
-            //}
-            if (debug_state.show_debug_rays)
+            if (!debug_manager.GetContext().frozen)
+#endif
             {
-                debug_renderer.AddLine(
-                    glm::vec3(-2.0f, 1.5f, 0.0f),
-                    glm::vec3(2.0f, 1.5f, 0.0f),
-                    glm::vec3(1.0f, 1.0f, 0.0f)); // horizontal yellow line through sphere area
+                sphere.Update(dt);
             }
 
-            // drag plane
-            if (debug_state.show_drag_plane && input.IsDragging())
-            {
-                debug_renderer.AddPlane(
-                    input.GetDragPlaneCenter(),
-                    camera.GetForward(),
-                    2.0f, glm::vec3(0.0f, 1.0f, 1.0f)); // cyan
-            }
+            Ray mouse_ray = RayUtils::ScreenToRay(
+                window.GetMouseState().x,
+                window.GetMouseState().y,
+                window.GetWidth(), window.GetHeight(),
+                view, proj);
 
-            // sphere velocity arrow
-            if (debug_state.show_velocity)
-            {
-                debug_renderer.AddArrow(
-                    glm::vec3(sphere.GetPosX(),
-                        sphere.GetPosY(),
-                        sphere.GetPosZ()),
-                    glm::vec3(sphere.GetDeltaX(),
-                        sphere.GetDeltaY(),
-                        sphere.GetDeltaZ()),
-                    10.0f,
-                    glm::vec3(1.0f, 0.0f, 0.0f)); // red
-            }
-
-            // light direction
-            if (debug_state.show_light)
-            {
-                debug_renderer.AddArrow(
-                    glm::vec3(sphere.GetPosX(),
-                        sphere.GetPosY() + 2.0f,
-                        sphere.GetPosZ()),
-                    glm::vec3(1.0f, 2.0f, 1.0f),
-                    1.0f,
-                    glm::vec3(1.0f, 1.0f, 0.5f)); // warm yellow
-            }
+#ifdef TOOP_DEBUG
+            debug_manager.Sync(mouse_ray, camera, sphere, renderer, input, config);
 #endif
 
-            sphere.UpdateHeadTilt(
-                input.GetMouseWorld().x,
-                input.GetMouseWorld().y,
-                input.GetMouseWorld().z,
-                camera.GetRight().x, camera.GetRight().y, camera.GetRight().z,
-                camera.GetUp().x, camera.GetUp().y, camera.GetUp().z);
+            glm::vec3 eye_left = renderer.GetEyeWorldPos(0,
+                glm::vec3(sphere.GetPosX(), sphere.GetPosY(), sphere.GetPosZ()),
+                glm::quat(sphere.GetVisualQuatW(), sphere.GetVisualQuatX(),
+                    sphere.GetVisualQuatY(), sphere.GetVisualQuatZ()),
+                config.sim.sphere_radius, config.bald_patches);
 
+            glm::vec3 eye_right = renderer.GetEyeWorldPos(1,
+                glm::vec3(sphere.GetPosX(), sphere.GetPosY(), sphere.GetPosZ()),
+                glm::quat(sphere.GetVisualQuatW(), sphere.GetVisualQuatX(),
+                    sphere.GetVisualQuatY(), sphere.GetVisualQuatZ()),
+                config.sim.sphere_radius, config.bald_patches);
+
+            glm::vec3 eye_center = (eye_left + eye_right) * 0.5f;
+
+            glm::vec3 tilt_mouse_world = eye_center;
+            RayUtils::RayCameraPlaneIntersect(
+                mouse_ray, eye_center,
+                camera.GetForward(), tilt_mouse_world);
+
+#ifdef TOOP_DEBUG
+            if (!debug_manager.GetContext().frozen)
+            {
+#endif
+                sphere.UpdateHeadTilt(
+                    tilt_mouse_world.x, tilt_mouse_world.y, tilt_mouse_world.z,
+                    camera.GetRight().x, camera.GetRight().y, camera.GetRight().z,
+                    camera.GetUp().x, camera.GetUp().y, camera.GetUp().z);
+                sphere.RotateTowardCamera(
+                    camera.GetPos().x, camera.GetPos().y, camera.GetPos().z);
+#ifdef TOOP_DEBUG
+            }
+#endif
             sim.SetSphereState(
                 sphere.GetPosX(), sphere.GetPosY(), sphere.GetPosZ(),
-                sphere.GetQuatX(), sphere.GetQuatY(), sphere.GetQuatZ(),
-                sphere.GetQuatW());
+                sphere.GetVisualQuatX(), sphere.GetVisualQuatY(),
+                sphere.GetVisualQuatZ(), sphere.GetVisualQuatW());
 
             sim_time += dt;
 
@@ -249,22 +240,28 @@ namespace Toop {
                     sphere.GetVisualQuatZ()),
                 config.sim.sphere_radius,
                 config.bald_patches,
-                input.GetMouseWorld());
+                mouse_ray.origin,
+                mouse_ray.direction,
+                camera.GetForward()
+#ifdef TOOP_DEBUG
+                , debug_manager.GetContext().frozen
+#else
+                , false
+#endif
+            );
 
 #ifdef TOOP_DEBUG
-            debug_renderer.Render(view, proj);
-            debug_ui.Render(debug_state);
+            debug_manager.Draw(view, proj);
+            if (debug_manager.GetContext().show_imgui)
+                debug_ui.Render(debug_state, debug_manager.GetContext());
             debug_ui.EndFrame();
 #endif
-
             window.EndFrame();
         }
-
 #ifdef TOOP_DEBUG
-        debug_renderer.Shutdown();
+        debug_manager.Shutdown();
         debug_ui.Shutdown();
 #endif
-
         renderer.Shutdown();
         sim.Shutdown();
         return 0;

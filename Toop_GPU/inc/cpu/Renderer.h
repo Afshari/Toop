@@ -2,6 +2,7 @@
 #ifndef TOOP_HEADLESS
 #include <glad/glad.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include "ShaderProgram.h"
 #include "Config.h"
 
@@ -18,9 +19,12 @@ namespace Toop {
             const glm::mat4& proj,
             const glm::vec3& sphere_pos,
             const glm::quat& sphere_orientation,
-            float sphere_radius,
+            float            sphere_radius,
             const BaldPatchConfig& bald_patches,
-            const glm::vec3& mouse_world);
+            const glm::vec3& mouse_ray_origin,
+            const glm::vec3& mouse_ray_dir,
+            const glm::vec3& camera_forward,
+            bool             frozen);
         void Shutdown();
 
         float* GetInteropPtr() const { return m_interop_ptr; }
@@ -28,6 +32,18 @@ namespace Toop {
         void   UnmapInterop() { UnmapInteropBuffer(); }
 
         bool IsInitialized() const { return m_initialized; }
+        glm::vec3 GetEyeWorldPos(
+            int                    eye_index,
+            const glm::vec3& sphere_pos,
+            const glm::quat& sphere_orientation,
+            float                  sphere_radius,
+            const BaldPatchConfig& bald_patches) const;
+        glm::vec3 GetEyeOutwardNormal(
+            int                    eye_index,
+            const glm::vec3& sphere_pos,
+            const glm::quat& sphere_orientation,
+            float                  sphere_radius,
+            const BaldPatchConfig& bald_patches) const;
 
     private:
         void InitHairBuffers(int total_particles, int num_segments, int num_strands);
@@ -37,7 +53,7 @@ namespace Toop {
 
         void RenderHair(const glm::mat4& view, const glm::mat4& proj);
         void RenderSphere(const glm::mat4& view, const glm::mat4& proj,
-            const glm::vec3& pos, float radius);
+            const glm::vec3& pos, const glm::quat& orientation, float radius);
         void RenderRoom(const glm::mat4& view, const glm::mat4& proj);
         void RenderGround(const glm::mat4& view, const glm::mat4& proj);
 
@@ -48,7 +64,10 @@ namespace Toop {
             const glm::quat& sphere_orientation,
             float sphere_radius,
             const BaldPatchConfig& bald_patches,
-            const glm::vec3& mouse_world);
+            const glm::vec3& mouse_ray_origin,
+            const glm::vec3& mouse_ray_dir,
+            const glm::vec3& camera_forward,
+            bool  frozen);
 
         void MapInteropBuffer();
         void UnmapInteropBuffer();
