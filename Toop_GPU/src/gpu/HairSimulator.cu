@@ -36,6 +36,7 @@ namespace Toop {
         m_sphere_cy = config.sphere_center.y;
         m_sphere_cz = config.sphere_center.z;
         m_num_substeps = config.num_substeps;
+        m_threads_per_block = config.threads_per_block;
 
         AllocateBuffers();
         UploadRootDirs(config, bald_patches);
