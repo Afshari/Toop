@@ -82,7 +82,6 @@ namespace Toop {
         std::vector<float> h_pos_y(n, 0.0f);
         std::vector<float> h_pos_z(n, 0.0f);
         std::vector<float> h_inv_mass(n, 0.0f);
-        std::vector<float> h_vel(n, 0.0f);
         std::vector<float> h_rest_lengths(m_num_strands * m_num_segments, m_segment_length);
 
         // placeholder - flat positions, proper Fibonacci init comes later
@@ -94,15 +93,14 @@ namespace Toop {
             float ry = m_sphere_cy + root_dirs[s].y * m_sphere_radius;
             float rz = m_sphere_cz + root_dirs[s].z * m_sphere_radius;
 
-            int base = s * particles_per_strand;
-
             for (int p = 0; p < particles_per_strand; p++)
             {
-                // place particles along outward normal from root
-                h_pos_x[base + p] = rx + root_dirs[s].x * p * m_segment_length;
-                h_pos_y[base + p] = ry + root_dirs[s].y * p * m_segment_length;
-                h_pos_z[base + p] = rz + root_dirs[s].z * p * m_segment_length;
-                h_inv_mass[base + p] = (p == 0) ? 0.0f : 1.0f;
+                // particle-major layout: particle p of strand s is at index p * num_strands + s
+                int idx = p * m_num_strands + s;
+                h_pos_x[idx] = rx + root_dirs[s].x * p * m_segment_length;
+                h_pos_y[idx] = ry + root_dirs[s].y * p * m_segment_length;
+                h_pos_z[idx] = rz + root_dirs[s].z * p * m_segment_length;
+                h_inv_mass[idx] = (p == 0) ? 0.0f : 1.0f;
             }
         }
 
@@ -353,6 +351,8 @@ namespace Toop {
             m_d_pos_x, m_d_pos_y, m_d_pos_z,
             static_cast<float*>(m_d_interop_aos),
             m_total_particles,
+            m_num_strands,
+            m_num_segments + 1,
             m_threads_per_block);
     }
 

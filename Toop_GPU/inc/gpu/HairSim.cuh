@@ -108,8 +108,10 @@ namespace Toop {
         const float* pos_y,
         const float* pos_z,
         float* aos_buffer,
-        int          total_particles,
-        int          threads_per_block);
+        int total_particles,
+        int num_strands,
+        int particles_per_strand,
+        int threads_per_block);
 
     void launch_apply_drag_velocity(
         float* pos_x,
