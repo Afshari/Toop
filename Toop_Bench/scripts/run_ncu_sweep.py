@@ -136,7 +136,6 @@ def build_ncu_cmd(
     threads_per_block: int,
     metrics: list[str],
     extra_args: str,
-    report_path: Path,
 ) -> list[str]:
     cmd = ["ncu"]
 
@@ -148,7 +147,6 @@ def build_ncu_cmd(
         "--launch-count", "1",
         "--metrics", ",".join(metrics),
         "--csv",
-        "--export", str(report_path),
     ]
 
     cmd += [
@@ -192,24 +190,26 @@ def run_ncu(cmd: list[str], kernel_name: str, tpb: int) -> str:
 def parse_ncu_csv(raw_output: str, kernel_name: str, tpb: int) -> dict:
     """
     Parse ncu --csv output into a flat dict of metric_name -> value.
-    ncu emits comment lines starting with '==' before the CSV block.
+    ncu emits comment lines starting with '==' and app output starting
+    with '[' -- both are filtered before parsing.
     """
     csv_lines = [
         line for line in raw_output.splitlines()
-        if not line.startswith("==") and line.strip()
+        if not line.startswith("==")
+        and not line.startswith("[")
+        and line.strip()
     ]
 
     if not csv_lines:
         print(f"[WARN] No CSV output for kernel={kernel_name} tpb={tpb}")
         return {}
 
-    import csv as csv_mod
-    reader = csv_mod.DictReader(csv_lines)
+    reader = csv.DictReader(csv_lines)
     metrics = {}
 
     for row in reader:
-        metric_name  = row.get("Metric Name", "").strip()
-        metric_value = row.get("Metric Value", "").strip()
+        metric_name  = row.get("Metric Name", "").strip().strip('"')
+        metric_value = row.get("Metric Value", "").strip().strip('"')
         if metric_name:
             metric_value = metric_value.replace(",", "")
             metrics[metric_name] = metric_value
@@ -240,11 +240,10 @@ def run_sweep(
 
     for tpb in tpb_values:
         timestamp   = datetime.now().strftime("%Y%m%d_%H%M%S")
-        report_path = ncu_report_dir / f"{kernel_name}_tpb{tpb}_{timestamp}"
 
         cmd = build_ncu_cmd(
             exe, config, kernel_name, tpb,
-            metrics, extra_args, report_path,
+            metrics, extra_args, 
         )
 
         if dry_run:
@@ -266,7 +265,7 @@ def run_sweep(
 
         # print a short summary line per tpb
         occupancy = metric_vals.get(
-            "sm__occupancy.avg.pct_of_peak_sustained_active", "N/A")
+            "sm__warps_active.avg.pct_of_peak_sustained_active", "N/A")
         coalescing = metric_vals.get(
             "smsp__sass_average_data_bytes_per_sector_mem_global_op_ld.pct", "N/A")
         print(f"    --> tpb={tpb:4d}  occupancy={occupancy}%  coalescing_ld={coalescing}%")

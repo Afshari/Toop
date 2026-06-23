@@ -77,7 +77,7 @@ the binary, all scripts, and the results directory in one place.
 
 Step 1 -- open a privileged shell (required for ncu and perf):
 ```bash
-docker compose --profile shell run --privileged shell
+docker compose --profile shell run shell
 ```
 
 Step 2 -- inside the container, run whatever you need:
@@ -112,13 +112,17 @@ docker compose build
 
 ## Profiling
 
-All scripts are run from inside the privileged shell container.
-Open the shell first:
+All scripts are run from inside the shell container.
+Open the shell first (privileged mode is required for ncu):
 ```bash
-docker compose --profile shell run --privileged shell
+docker compose --profile shell run shell
 ```
 
 Then run any of the following from `/app` inside the container.
+Results are written to `Toop_Bench/results/`. Copy them out before exiting:
+```bash
+docker cp <container_id>:/app/Toop_Bench/results ./Toop_Bench/results
+```
 
 ---
 
@@ -141,8 +145,22 @@ python Toop_Bench/scripts/query_kernel_info.py --dry-run
 
 ### NCU -- sweep
 
-Sweeps `threads_per_block` for a single kernel.
+Sweeps `threads_per_block` for a single kernel, collecting the metrics
+defined in the kernel's params JSON. Each tpb value runs ncu once and
+collects all metrics in one pass.
 Output: `Toop_Bench/results/<kernel>_sweep_<timestamp>.csv`
+
+While running, each tpb prints a summary line:
+
+--> tpb=  128  occupancy=32.12%  coalescing_ld=17.24%
+
+Flat occupancy and coalescing across all tpb values means block size is
+not the bottleneck -- the issue is the memory access pattern in the kernel.
+Varying coalescing across tpb values means block size is worth tuning.
+
+To add or remove metrics, edit the `ncu.metrics` list in the params JSON.
+To change the tpb sweep range, edit `sweep.threads_per_block` in the params JSON.
+
 
 ```bash
 # k_solve_constraints_xpbd
