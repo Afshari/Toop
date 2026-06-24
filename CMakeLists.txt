@@ -66,6 +66,8 @@ if(NOT TOOP_HEADLESS)
     add_subdirectory(Toop)
 endif()
 
+add_subdirectory(Toop_Tests)
+
 # ---------------------------------------------------------------------------
 # Build order
 # ---------------------------------------------------------------------------
@@ -75,6 +77,8 @@ add_dependencies(Toop_Bench Toop_CPU Toop_GPU)
 if(NOT TOOP_HEADLESS)
     add_dependencies(Toop Toop_CPU Toop_GPU)
 endif()
+
+add_dependencies(Toop_Tests Toop_CPU Toop_GPU)
 
 # ---------------------------------------------------------------------------
 # Copy config.json next to each output binary
