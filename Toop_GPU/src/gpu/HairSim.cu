@@ -141,7 +141,8 @@ namespace Toop {
 		float root_y = sphere_cy + ry * sphere_radius;
 		float root_z = sphere_cz + rz * sphere_radius;
 
-		int root_idx = sid * particles_per_strand;
+		// particle-major layout: segment 0 of strand sid is at index sid
+		int root_idx = sid;
 
 		// update both pos and prev_pos to avoid velocity spike at root
 		pos_x[root_idx] = root_x;
@@ -170,13 +171,14 @@ namespace Toop {
 		if (sid >= num_strands) return;
 
 		float alpha_tilde = compliance / (sub_dt * sub_dt);
-		int   base = sid * particles_per_strand;
 		int   lambda_base = sid * num_segments;
 
 		for (int i = 0; i < num_segments; i++)
 		{
-			int id0 = base + i;
-			int id1 = base + i + 1;
+			// particle-major layout: particle i of strand sid
+			// is at index i * num_strands + sid
+			int id0 = i * num_strands + sid;
+			int id1 = (i + 1) * num_strands + sid;
 
 			float dx = pos_x[id1] - pos_x[id0];
 			float dy = pos_y[id1] - pos_y[id0];
@@ -241,9 +243,10 @@ namespace Toop {
 		if (idx >= total_particles) return;
 		if (inv_mass[idx] == 0.0f) return;
 
-		// falloff - roots move fully, tips move less
-		int   local_idx = idx % particles_per_strand;
-		float t = (float)local_idx / (float)(particles_per_strand - 1);
+		// particle-major layout: segment index = idx / num_strands
+		int   num_strands_local = total_particles / particles_per_strand;
+		int   segment = idx / num_strands_local;
+		float t = (float)segment / (float)(particles_per_strand - 1);
 		float move_factor = 1.0f - t * 0.3f;
 
 		float dx = delta_x * move_factor;
@@ -264,14 +267,24 @@ namespace Toop {
 		const float* __restrict__ pos_y,
 		const float* __restrict__ pos_z,
 		float* __restrict__ aos_buffer,
-		int total_particles)
+		int total_particles,
+		int num_strands,
+		int particles_per_strand)
 	{
 		int idx = blockIdx.x * blockDim.x + threadIdx.x;
 		if (idx >= total_particles) return;
 
-		aos_buffer[idx * 3 + 0] = pos_x[idx];
-		aos_buffer[idx * 3 + 1] = pos_y[idx];
-		aos_buffer[idx * 3 + 2] = pos_z[idx];
+		// idx is the output index in strand-major order
+		// strand-major: idx = sid * particles_per_strand + i
+		int sid = idx / particles_per_strand;
+		int i = idx % particles_per_strand;
+
+		// particle-major source index: i * num_strands + sid
+		int src = i * num_strands + sid;
+
+		aos_buffer[idx * 3 + 0] = pos_x[src];
+		aos_buffer[idx * 3 + 1] = pos_y[src];
+		aos_buffer[idx * 3 + 2] = pos_z[src];
 	}
 
 	__global__ void k_apply_drag_velocity(
@@ -479,12 +492,15 @@ namespace Toop {
 		const float* pos_y,
 		const float* pos_z,
 		float* aos_buffer,
-		int          total_particles,
-		int          threads_per_block)
+		int total_particles,
+		int num_strands,
+		int particles_per_strand,
+		int threads_per_block)
 	{
 		int blocks = (total_particles + threads_per_block - 1) / threads_per_block;
 		k_pack_positions_aos << <blocks, threads_per_block >> > (
-			pos_x, pos_y, pos_z, aos_buffer, total_particles);
+			pos_x, pos_y, pos_z, aos_buffer,
+			total_particles, num_strands, particles_per_strand);
 	}
 
 	void launch_apply_drag_velocity(

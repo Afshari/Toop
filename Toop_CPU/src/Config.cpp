@@ -38,6 +38,7 @@ namespace Toop {
         cfg.sim.sphere_center = LoadVec3(pt.get_child("sim.sphere_center"));
         cfg.sim.wind_strength = pt.get<float>("sim.wind_strength");
         cfg.sim.wind_frequency = pt.get<float>("sim.wind_frequency");
+        cfg.sim.threads_per_block = pt.get<int>("sim.threads_per_block");
 
         // sphere
         cfg.sphere.gravity = pt.get<float>("sphere.gravity");

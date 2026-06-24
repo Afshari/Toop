@@ -3,9 +3,9 @@
     "cli_name": "k_update_roots",
     "executable": "../../x64/Release/Toop_Bench",
     "config_file": "../../config.json",
-    "results_dir": "results",
+    "results_dir": "../results",
     "ncu": {
-        "output_dir": "results/ncu_reports",
+        "output_dir": "../results/ncu_reports",
         "extra_args": "--target-processes all",
         "metrics": [
             "sm__throughput.avg.pct_of_peak_sustained_elapsed",

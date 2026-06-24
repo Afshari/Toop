@@ -25,6 +25,7 @@ namespace Toop {
         Vec3Config  sphere_center = { 0.0f, 1.5f, 0.0f };
         float       wind_strength = 0.15f;
         float       wind_frequency = 0.5f;
+        int         threads_per_block = 128;
     };
 
     struct SphereConfig

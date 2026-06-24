@@ -30,7 +30,9 @@ Toop/
 ├── config.json                # Runtime simulation parameters
 ├── Dockerfile                 # Headless AWS build (Tesla T4)
 ├── docker-compose.yaml        # Service definitions
-└── setup_aws.sh               # One-time AWS instance setup
+├── scripts/                   # Shell scripts
+│   └── setup-aws.sh           # One-time AWS instance setup
+└── .gitattributes             # Line ending rules for shell scripts
 ```
 
 ---
@@ -77,7 +79,7 @@ the binary, all scripts, and the results directory in one place.
 
 Step 1 -- open a privileged shell (required for ncu and perf):
 ```bash
-docker compose --profile shell run --privileged shell
+docker compose --profile shell run shell
 ```
 
 Step 2 -- inside the container, run whatever you need:
@@ -112,13 +114,17 @@ docker compose build
 
 ## Profiling
 
-All scripts are run from inside the privileged shell container.
-Open the shell first:
+All scripts are run from inside the shell container.
+Open the shell first (privileged mode is required for ncu):
 ```bash
-docker compose --profile shell run --privileged shell
+docker compose --profile shell run shell
 ```
 
 Then run any of the following from `/app` inside the container.
+Results are written to `Toop_Bench/results/`. Copy them out before exiting:
+```bash
+docker cp <container_id>:/app/Toop_Bench/results ./Toop_Bench/results
+```
 
 ---
 
@@ -141,8 +147,21 @@ python Toop_Bench/scripts/query_kernel_info.py --dry-run
 
 ### NCU -- sweep
 
-Sweeps `threads_per_block` for a single kernel.
+Sweeps `threads_per_block` for a single kernel, collecting the metrics defined in the kernel's params JSON. Each tpb value runs ncu once and collects all metrics in one pass.
 Output: `Toop_Bench/results/<kernel>_sweep_<timestamp>.csv`
+
+While running, each tpb prints a summary line:
+
+```bash
+--> tpb=  128  occupancy=32.12%  coalescing_ld=17.24%
+```
+
+Flat occupancy and coalescing across all tpb values means block size is not the bottleneck -- the issue is the memory access pattern in the kernel.
+Varying coalescing across tpb values means block size is worth tuning.
+
+To add or remove metrics, edit the `ncu.metrics` list in the params JSON.
+To change the tpb sweep range, edit `sweep.threads_per_block` in the params JSON.
+
 
 ```bash
 # k_solve_constraints_xpbd
@@ -174,8 +193,7 @@ python Toop_Bench/scripts/run_ncu_sweep.py --list-params
 
 ### Valgrind
 
-CPU-side memory leak and invalid access detection.
-CUDA driver allocations are expected and are not real leaks.
+CPU-side memory leak and invalid access detection. CUDA driver allocations are expected and are not real leaks.
 Output: `Toop_Bench/results/valgrind/valgrind_<timestamp>.log`
 
 ```bash
@@ -195,25 +213,58 @@ Key line to check: `definitely lost: 0 bytes` means no real leaks.
 
 ### Perf
 
-CPU-side sampling profiler. Captures kernel launch overhead and
-host-side hotspots in `HairSimulator::Step()`.
-Output: `Toop_Bench/results/perf/perf_<timestamp>_report.txt`
+CPU-side sampling profiler. Captures kernel launch overhead and host-side hotspots in `HairSimulator::Step()`.
 
-Requires `perf_event_paranoid=-1` on the EC2 host (set by `setup_aws.sh`).
-Must run inside the privileged shell container.
+Perf runs on the EC2 host, not inside Docker, due to kernel version constraints. Run these steps from the host after entering the shell container.
+
+Step 1 -- copy the binary from the container to the host:
+```bash
+docker cp <container_id>:/app/x64/Release/Toop_Bench ~/Toop_Bench
+docker cp <container_id>:/app/config.json ~/config.json
+```
+
+Step 2 -- set perf permissions and run on the host:
+```bash
+sudo sysctl -w kernel.perf_event_paranoid=-1
+sudo apt-get install -y linux-tools-aws
+cd ~
+sudo perf record -g -F 99 ./Toop_Bench --headless --config .
+sudo perf report --stdio --no-children > perf_report.txt
+head -60 perf_report.txt
+```
+
+Note: increase `capture_frames` in `config.json` to 3000 to reduce init overhead in the profile (otherwise CUDA driver init dominates).
+
+### nsys
+
+GPU timeline profiler. Shows per-kernel execution time and call counts. nsys 2024.2.0 is available inside the Docker container and is on PATH automatically (set in Dockerfile).
+
+Output: `Toop_Bench/results/nsys/nsys_timing_<timestamp>.csv`
+Also generates: `toop_profile_<timestamp>.nsys-rep` and `.sqlite`
 
 ```bash
-bash Toop_Bench/scripts/run_perf.sh \
+python Toop_Bench/scripts/run_nsys.py \
     --exe /app/x64/Release/Toop_Bench \
     --config /app/config.json
 ```
 
 Dry run:
 ```bash
-bash Toop_Bench/scripts/run_perf.sh \
+python Toop_Bench/scripts/run_nsys.py \
     --exe /app/x64/Release/Toop_Bench \
     --config /app/config.json \
     --dry-run
+```
+
+Show all parameters:
+```bash
+python Toop_Bench/scripts/run_nsys.py --list-params
+```
+
+To open the visual timeline in Nsight Systems GUI on Windows, copy the `.nsys-rep` out of the container first:
+```bash
+docker cp <container_id>:/app/Toop_Bench/results/nsys/toop_profile_<timestamp>.nsys-rep \
+    ./toop_profile.nsys-rep
 ```
 
 ---

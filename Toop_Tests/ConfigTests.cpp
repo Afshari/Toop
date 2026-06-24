@@ -114,7 +114,8 @@ namespace Toop {
                 "sphere_radius": 0.4,
                 "sphere_center": { "x": 0.0, "y": 1.5, "z": 0.0 },
                 "wind_strength": 0.15,
-                "wind_frequency": 0.5
+                "wind_frequency": 0.5,
+                "threads_per_block": 128
             },
             "sphere": {
                 "gravity": -1.0,
