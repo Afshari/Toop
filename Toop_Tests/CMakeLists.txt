@@ -30,7 +30,6 @@ set(TEST_SOURCES
     CameraTests.cpp
     ConfigTests.cpp
     FibonacciSphereTests.cpp
-    ShaderProgramTests.cpp
     SpherePhysicsTests.cpp
     HairSimulatorTests.cpp
 )

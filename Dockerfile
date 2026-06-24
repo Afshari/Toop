@@ -23,6 +23,8 @@ RUN apt-get update && apt-get install -y \
     valgrind \
     && rm -rf /var/lib/apt/lists/*
 
+ENV PATH="/opt/nvidia/nsight-compute/2024.2.0/host/target-linux-x64:${PATH}"
+
 # ---------------------------------------------------------------------------
 # Copy source
 # ---------------------------------------------------------------------------
